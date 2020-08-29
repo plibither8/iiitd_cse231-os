@@ -8,13 +8,13 @@ preprocess: prog-add.c add.asm
 	$(ASM) $(ASM_FLAGS) -E add.asm -o add.i
 
 # Stop after compilation to assembly code
-compile: prog-add.c prog-add.i
+compile: prog-add.i
 	$(CC) -S prog-add.i -o prog-add.s
 
 # Assemble C code after compilation and return an object file
 # Assemble assembly file with nasm
-assemble: prog-add.c add.asm
-	$(CC) -c prog-add.c -o prog-add.o
+assemble: prog-add.s add.asm
+	$(CC) -c prog-add.s -o prog-add.o
 	$(ASM) $(ASM_FLAGS) add.asm -i add.o
 
 # Link the object files to create an executable

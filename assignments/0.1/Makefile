@@ -5,16 +5,16 @@ preprocess: hello.c
 	$(CC) -E hello.c -o hello.i
 
 # Stop after compilation to assembly code
-compile: hello.c hello.i
+compile: hello.i
 	$(CC) -S hello.i -o hello.s
 
 # Assemble the code after compilation and return an object file
-assemble: hello.c
-	$(CC) -c hello.c -o hello.o
+assemble: hello.s
+	$(CC) -c hello.s -o hello.o
 
 # Link the object to file to create an executable
-link: hello.c hello.o
-	$(CC) hello.c -o hello
+link: hello.o
+	$(CC) hello.o -o hello
 
 # Clean the processed files to start over
 clean:
