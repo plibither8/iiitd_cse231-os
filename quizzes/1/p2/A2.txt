@@ -1,23 +1,65 @@
 # p2
 
-Upon attempting to compile the given snippet (in [this file](./add.c)) using the `gcc` compiler, we receive the following output:
+Upon attempting to compile the given snippet (in [this file](./add.c)) using the
+`gcc` compiler, we receive the following output:
 
 ```txt
-p2/add.c:1:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+add.c:1:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
     1 | add (float a, float b)
       | ^~~
-p2/add.c: In function ‘add’:
-p2/add.c:3:18: warning: implicit declaration of function ‘round’ [-Wimplicit-function-declaration]
+add.c: In function ‘add’:
+add.c:3:18: warning: implicit declaration of function ‘round’ [-Wimplicit-function-declaration]
     3 |   return (float)(round(a) + round(b));
       |                  ^~~~~
-p2/add.c:3:18: warning: incompatible implicit declaration of built-in function ‘round’
-p2/add.c:1:1: note: include ‘<math.h>’ or provide a declaration of ‘round’
+add.c:3:18: warning: incompatible implicit declaration of built-in function ‘round’
+add.c:1:1: note: include ‘<math.h>’ or provide a declaration of ‘round’
   +++ |+#include <math.h>
     1 | add (float a, float b)
 /usr/bin/ld: /usr/lib/gcc/x86_64-linux-gnu/9/../../../x86_64-linux-gnu/Scrt1.o: in function `_start':
 (.text+0x24): undefined reference to `main'
-/usr/bin/ld: /tmp/cc4O940S.o: in function `add':
+/usr/bin/ld: /tmp/ccNkT6DN.o: in function `add':
 add.c:(.text+0x1c): undefined reference to `round'
 /usr/bin/ld: add.c:(.text+0x2b): undefined reference to `round'
 collect2: error: ld returned 1 exit status
+c:2: no such file or directory: ./add
 ```
+
+We get 4 compiler warnings and 3 linker errors:
+
+## Compiler warnings:
+
+1. add.c:1:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+This indicates that we have not explicitly mentioned a return type to the `add`
+function and so the gcc compiler has implicitly assigned it a return type `int`.
+
+2. add.c:3:18: warning: implicit declaration of function ‘round’ [-Wimplicit-function-declaration]
+As mentioned previously, In C, using a previously undeclared function
+constitutes an implicit declaration of the function. In an implicit declaration,
+the return type is `int`. Since we have not declared or the `round` function
+anywhere, or linked to any definition in a separate header file like `math.h`,
+this counts as an implicit declaration and is assigned an `int` return type.
+
+3. add.c:3:18: warning: incompatible implicit declaration of built-in function ‘round’
+GCC has built-in definitions for some standard functions, like in this case,
+`round`. If an implicit declaration does not match the built-in definition, we
+get this warning.
+
+4. add.c:1:1: note: include ‘<math.h>’ or provide a declaration of ‘round’
+The `round` function is found in the `math.h` header file. To use its
+declaration, we must explicitly include it in our C file.
+
+## Linker errors:
+
+1. (.text+0x24): undefined reference to `main'
+
+The linker, by default, expects the C program to contain a function named `main`
+to act as the entry point of the program. Since our C program does not have a
+function named `main`, it cannot call or reference it.
+
+2. add.c:(.text+0x1c): undefined reference to `round'
+3. /usr/bin/ld: add.c:(.text+0x2b): undefined reference to `round'
+
+Since we have not included in header library files like `math.h` that contain a
+valid definition of the `round` function, or explicitly defined the function
+ourselves in our C code, the linker cannot find any instances of the `round`
+function and thus can't reference it.

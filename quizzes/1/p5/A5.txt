@@ -1,0 +1,24 @@
+I would prefer to run the program in Real Mode (16-bit addressing mode).
+Following is the justification:
+
+  - More often than not, embedded systems are tasked with only one single task,
+  that is predecided. The embedded system can be hard-coded any program without
+  the need for revision, or cater to other more dynamic program problems. This
+  realisation has two implications:
+    - Since mostly a single task needs to be performed, there isn't a
+    requirement for a multitasking system, which is available to us via the long
+    mode. - Secondly, since the system and program will not have a very dynamic
+    nature, we can hard code addresses into the program itself, and use the
+    absolute addressing capability of real mode.
+
+  - 320KB is a very, very limited RAM capacity. Any space inside it must be used
+  judiciously. 320KB does not allow the the possibility of having a cache. Thus,
+  by keeping the wordsize at 16bits, we are able to allow our program 4 times
+  more words than long mode's 64-bit.
+
+  - 320KB is well within the maxmimum 1MiB addressing capability of real mode.
+  All addresses in the RAM can be directly and absolutely accessed.
+
+  - Long mode capabilities of paging real memory locations into the virtual
+  space are not of immediate requirement to an embedded system with such low
+  capacity.

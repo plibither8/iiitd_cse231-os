@@ -1,0 +1,27 @@
+Assumption: in the `extended_add` function, we would want to add capability of
+handling long integers, that is, of 64-bit size. In the `long_add` function,
+since we are compiling it as 32-bit object, we can only support 32-bit integers,
+or `int`s.
+
+# Changes:
+  - On the basis of the aforementioned assumption, one major change that we must
+  make is to change the register names to their 64-bit equivalents. For example,
+    - eax --> rax
+    - ebp --> rbp
+    - esi --> rsi
+    ...and so on.
+    In our code, the change that we do make is eax --> rax, that is, the
+    register that holds the return value of the function.
+    These registers are 64-bits in size.
+
+  - The x86 assembly code requires us to prepend and append the stack
+  operations' prologue and epilogue. This is required for the maintenance of the
+  base pointer, EBP. The base pointer is used by convention as a point of
+  reference for finding parameters and local variables on the stack.
+
+  - The x86-64 assembly code does not require us to conduct stack operations if
+  the number of parameters passed to the function are less than 7. In our case,
+  there are four parameters passed to the function which are directly stored in
+  the registers `rdi`, `rsi`, `rdx`, `rcx` On 64 bit machines,
+  the strict requirements vanish most of the simplicity and clarity, the
+  base pointer remains used in debug mode however.

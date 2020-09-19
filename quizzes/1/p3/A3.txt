@@ -1,0 +1,27 @@
+We first initialise a `long` and `int` array of 8 and 16 elements respectivily
+with arbitrary numbers. We use these numbers to contiguously store in the given
+character array.
+
+For both variants, 8 64-bit numbers or 16 32-bit numbers, the core logic to
+store the number in the character array remains the same. I will explain the
+logic of the 64-bit number and analogize it to explain for the 32-bit number.
+
+Our aim is to bytewise divide the numbers into separate chunks, and store these
+64 bytes into the character array's 64 1-byte memory slots.
+
+In the `longToChar` function, we first loop through i=0 to i=7, thereby covering
+the 8 long numbers stored in the `numbers[]` array. The size of a long integer
+is 8 bytes, and so for each long, we need to isolate 8 bytes. We achieve this by
+right shifting the number by 8 repeatedly. We start by from the 8 MSB, and
+finally the 8 LSB. When storing the `oneByte` in the character, only the 8 LSB
+are taken into consideration and the rest are discarded. We "put" this one byte
+in the contiguous locations in the character array starting from x[0] to x[64].
+
+The similar logic applies for the 32-bit number. We loop through the 16 32-bit
+numbers. Since a 32-bit number is made of 4 bytes, we require to isolate the 4
+bytes from each 32-bit number. And as with the 64-bit process, we store the
+single bytes in the character array.
+
+Retrieving the stored longs and ints is also simple. We need to left shift the
+numbers by 8 this time, AND the bits and finally OR all the different bits in
+each byte of the number together.

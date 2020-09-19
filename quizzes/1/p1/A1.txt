@@ -1,0 +1,32 @@
+Here we show that even though a program can only have one entrypoint, we can
+explicitly specify the linker to use our own, custom entrypoint and ignore the
+defaults.
+
+The assembly code in p1.asm is very simple:
+  - Moves the integers 1 and 2 into `rdi` and `rsi` registers.
+  - Calls `checkGreater` function
+    - Compares rdi, rsi for rdi > rsi
+    - Sets up the registers for the 'write' system call
+    - Jumps to `write1` if rdi > rsi
+      - mov data One ("1") in to rsi register and syscall
+      - Exit the program
+    - If rdi <= rsi
+      - perform `write0` similar to `write1`
+      - Jump to exit function
+
+The C code is even simpler:
+  - Define two integers x, y with 2 and 1 respectively
+  - Call `checkGreater` with the two parameters defined in assembly code
+
+The output if the assembly code's `_start` function runs should be `0` and the
+output if the C code's `main` function runs should be `1`.
+
+Using the commands in the Makefile, if we run `make compile link`, the linker by
+default assumes the assembly code's `_start` function as the main entrypoint and
+thus the output of that executable comes to be `0`.
+
+If we specify our own entrypoint `main` using the flag: `-e main` to the linker,
+the linker assumes the `main` function to be the entrypoint and the output of
+that executable comes out to be `1`.
+
+Thus we see that by choosing our entrypoint in the linker step, `main` can call `checkGreater`.
