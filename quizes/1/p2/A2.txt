@@ -1,0 +1,23 @@
+# p2
+
+Upon attempting to compile the given snippet (in [this file](./add.c)) using the `gcc` compiler, we receive the following output:
+
+```txt
+p2/add.c:1:1: warning: return type defaults to ‘int’ [-Wimplicit-int]
+    1 | add (float a, float b)
+      | ^~~
+p2/add.c: In function ‘add’:
+p2/add.c:3:18: warning: implicit declaration of function ‘round’ [-Wimplicit-function-declaration]
+    3 |   return (float)(round(a) + round(b));
+      |                  ^~~~~
+p2/add.c:3:18: warning: incompatible implicit declaration of built-in function ‘round’
+p2/add.c:1:1: note: include ‘<math.h>’ or provide a declaration of ‘round’
+  +++ |+#include <math.h>
+    1 | add (float a, float b)
+/usr/bin/ld: /usr/lib/gcc/x86_64-linux-gnu/9/../../../x86_64-linux-gnu/Scrt1.o: in function `_start':
+(.text+0x24): undefined reference to `main'
+/usr/bin/ld: /tmp/cc4O940S.o: in function `add':
+add.c:(.text+0x1c): undefined reference to `round'
+/usr/bin/ld: add.c:(.text+0x2b): undefined reference to `round'
+collect2: error: ld returned 1 exit status
+```
