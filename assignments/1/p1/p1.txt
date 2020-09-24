@@ -1,0 +1,9 @@
+syscalls used:
+fork
+waitpid
+open
+lseek
+read
+write
+close
+exit

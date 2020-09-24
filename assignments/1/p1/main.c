@@ -70,13 +70,14 @@ void parse_line(char *line, char section)
   int student_id, a1, a2, a3, a4;
   char student_section;
   char *saveptr;
+  char *delim = ",";
 
   // Student ID
-  char *token = strtok_r(line, ",", &saveptr);
+  char *token = strtok_r(line, delim, &saveptr);
   student_id = atoi(token);
 
   // Student section
-  token = strtok_r(NULL, ",", &saveptr);
+  token = strtok_r(NULL, delim, &saveptr);
   student_section = token[0];
 
   // If the student section is not same
@@ -84,42 +85,44 @@ void parse_line(char *line, char section)
   if (student_section != section) return;
 
   // Assignment 1
-  token = strtok_r(NULL, ",", &saveptr);
+  token = strtok_r(NULL, delim, &saveptr);
   a1 = atoi(token);
 
   // Assignment 2
-  token = strtok_r(NULL, ",", &saveptr);
+  token = strtok_r(NULL, delim, &saveptr);
   a2 = atoi(token);
 
   // Assignment 3
-  token = strtok_r(NULL, ",", &saveptr);
+  token = strtok_r(NULL, delim, &saveptr);
   a3 = atoi(token);
 
   // Assignment 4
-  token = strtok_r(NULL, ",", &saveptr);
+  token = strtok_r(NULL, delim, &saveptr);
   a4 = atoi(token);
 
   // Calculate average
-  float average  = (float)(a1 + a2 + a3 + a4) / 4;
+  float average = (float)(a1 + a2 + a3 + a4) / 4;
 
-  printf("%d: %f\n", student_id, average);
+  char *text;
+  snprintf(text, 20, "%d: %f\n", student_id, average);
+
+  // write final output to stdout
+  write(1, text, strlen(text));
 }
 
 void parse_file(char *file_content, char section)
 {
   int count = -1;
   char *saveptr;
-  char *line = strtok_r(file_content, "\n", &saveptr);
+  char *delim = "\n";
+  char *line = strtok_r(file_content, delim, &saveptr);
 
   while(line)
   {
-    // Increment the counter
-    count++;
-
     // Skip the initial CSV header
-    if (count == 0)
+    if (++count == 0)
     {
-      line = strtok_r(NULL, "\n", &saveptr);
+      line = strtok_r(NULL, delim, &saveptr);
       continue;
     }
 
@@ -127,7 +130,7 @@ void parse_file(char *file_content, char section)
     parse_line(line, section);
 
     // Next line
-    line = strtok_r(NULL, "\n", &saveptr);
+    line = strtok_r(NULL, delim, &saveptr);
   }
 }
 
