@@ -59,8 +59,9 @@ char * read_file(int fd, int file_length)
 }
 
 // Close file from file descriptor
-void close_file(int fd)
+void close_file(int fd, char *buf)
 {
+  free(buf);
   int close_file = close(fd);
   if (close_file == -1) throw_error(ERR_FILE_CLOSE);
 }
@@ -103,11 +104,14 @@ void parse_line(char *line, char section)
   // Calculate average
   float average = (float)(a1 + a2 + a3 + a4) / 4;
 
-  char *text;
+  // Assign memory for storing to-be-printed text
+  char *text = (char *) calloc(20, sizeof(char));
   snprintf(text, 20, "%d: %f\n", student_id, average);
 
-  // write final output to stdout
+  // Write final output to stdout
   write(1, text, strlen(text));
+
+  free(text);
 }
 
 void parse_file(char *file_content, char section)
@@ -153,7 +157,7 @@ int main(int argc, char *argv[])
     printf("Section A:\n");
     parse_file(file_content, 'A');
 
-    close_file(fd);
+    close_file(fd, file_content);
     exit(0);
   }
   else
@@ -167,7 +171,7 @@ int main(int argc, char *argv[])
     printf("\n\nSection B:\n");
     parse_file(file_content, 'B');
 
-    close_file(fd);
+    close_file(fd, file_content);
   }
 
   return 0;
