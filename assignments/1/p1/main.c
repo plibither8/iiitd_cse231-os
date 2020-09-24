@@ -68,13 +68,15 @@ void close_file(int fd, char *buf)
 
 void parse_line(char *line, char section)
 {
-  int student_id, a1, a2, a3, a4;
+  int student_id;
+  int sum = 0, count = 0;
   char student_section;
+  char *token;
   char *saveptr;
   char *delim = ",";
 
   // Student ID
-  char *token = strtok_r(line, delim, &saveptr);
+  token = strtok_r(line, delim, &saveptr);
   student_id = atoi(token);
 
   // Student section
@@ -85,24 +87,15 @@ void parse_line(char *line, char section)
   // as the requested section, return
   if (student_section != section) return;
 
-  // Assignment 1
-  token = strtok_r(NULL, delim, &saveptr);
-  a1 = atoi(token);
-
-  // Assignment 2
-  token = strtok_r(NULL, delim, &saveptr);
-  a2 = atoi(token);
-
-  // Assignment 3
-  token = strtok_r(NULL, delim, &saveptr);
-  a3 = atoi(token);
-
-  // Assignment 4
-  token = strtok_r(NULL, delim, &saveptr);
-  a4 = atoi(token);
+  // Loop over next ints, calc sum and count
+  while ((token = strtok_r(NULL, delim, &saveptr)))
+  {
+    sum += atoi(token);
+    count++;
+  }
 
   // Calculate average
-  float average = (float)(a1 + a2 + a3 + a4) / 4;
+  float average = (float) sum / count;
 
   // Assign memory for storing to-be-printed text
   char *text = (char *) calloc(20, sizeof(char));
@@ -116,39 +109,36 @@ void parse_line(char *line, char section)
 
 void parse_file(char *file_content, char section)
 {
-  int count = -1;
   char *saveptr;
   char *delim = "\n";
   char *line = strtok_r(file_content, delim, &saveptr);
+  int header = 1;
 
-  while(line)
-  {
+  do {
     // Skip the initial CSV header
-    if (++count == 0)
+    if (header)
     {
-      line = strtok_r(NULL, delim, &saveptr);
+      header = 0;
       continue;
     }
 
     // Parse the current line
     parse_line(line, section);
-
-    // Next line
-    line = strtok_r(NULL, delim, &saveptr);
   }
+  while ((line = strtok_r(NULL, delim, &saveptr)));
 }
 
 int main(int argc, char *argv[])
 {
   // Fork the process and store child pid
-  int child_process = fork();
+  int child_pid = fork();
 
   // Error in forking
-  if (child_process < 0)
+  if (child_pid < 0)
   {
     throw_error(ERR_FORK);
   }
-  else if (child_process == 0)
+  else if (child_pid == 0)
   { // Child process
     int fd = open_file();
     int file_length = get_file_length(fd);
@@ -162,7 +152,7 @@ int main(int argc, char *argv[])
   }
   else
   { // Parent process
-    waitpid(child_process, NULL, 0);
+    waitpid(child_pid, NULL, 0);
 
     int fd = open_file();
     int file_length = get_file_length(fd);
