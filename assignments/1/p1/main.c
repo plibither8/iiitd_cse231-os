@@ -11,6 +11,7 @@ char *ERR_FILE_OPEN = "ERR! File could not be opened properly.";
 char *ERR_FILE_SEEK = "ERR! Could not seek in file.";
 char *ERR_FILE_READ = "ERR! Coult not read file.";
 char *ERR_FILE_CLOSE = "ERR! Could not close file.";
+char *ERR_WRITE = "ERR! Could not write to specified stream";
 char *ERR_FORK = "ERR! Could not fork parent.";
 
 // Simple wrapper to take in error message
@@ -26,7 +27,8 @@ void throw_error(char *msg)
 int open_file()
 {
   int fd = open("marks.csv", O_RDONLY | O_EXCL);
-  if (fd == -1) throw_error(ERR_FILE_OPEN);
+  if (fd == -1)
+    throw_error(ERR_FILE_OPEN);
 
   return fd;
 }
@@ -36,24 +38,25 @@ int open_file()
 int get_file_length(int fd)
 {
   int file_length = (int) lseek(fd, 0, SEEK_END);
-  if (file_length == -1) throw_error(ERR_FILE_SEEK);
+  if (file_length == -1)
+    throw_error(ERR_FILE_SEEK);
 
   // Go back to the start of the file
-  int seek_to_front = (int) lseek(fd, 0, SEEK_SET);
-  if (seek_to_front == -1) throw_error(ERR_FILE_SEEK);
+  if ((int) lseek(fd, 0, SEEK_SET) == -1)
+    throw_error(ERR_FILE_SEEK);
 
   return file_length;
 }
 
 // Read file from file descriptor and file length
-char * read_file(int fd, int file_length)
+char *read_file(int fd, int file_length)
 {
   // Allocate memory for file content
   char *buf = (char *) calloc(file_length, sizeof(char));
 
   // Read the file
-  int read_size = read(fd, buf, file_length);
-  if (read_size == -1) throw_error(ERR_FILE_READ);
+  if (read(fd, buf, file_length) == -1)
+    throw_error(ERR_FILE_READ);
 
   return buf;
 }
@@ -62,10 +65,11 @@ char * read_file(int fd, int file_length)
 void close_file(int fd, char *buf)
 {
   free(buf);
-  int close_file = close(fd);
-  if (close_file == -1) throw_error(ERR_FILE_CLOSE);
+  if (close(fd) == -1)
+    throw_error(ERR_FILE_CLOSE);
 }
 
+// Parse CSV row
 void parse_line(char *line, char section)
 {
   int student_id;
@@ -102,11 +106,13 @@ void parse_line(char *line, char section)
   snprintf(text, 20, "%d: %f\n", student_id, average);
 
   // Write final output to stdout
-  write(1, text, strlen(text));
+  if (write(1, text, strlen(text)) == -1)
+    throw_error(ERR_WRITE);
 
   free(text);
 }
 
+// Parse the CSV table
 void parse_file(char *file_content, char section)
 {
   char *saveptr;
@@ -133,9 +139,8 @@ int main(int argc, char *argv[])
   // Fork the process and store child pid
   int child_pid = fork();
 
-  // Error in forking
   if (child_pid < 0)
-  {
+  { // Error in forking
     throw_error(ERR_FORK);
   }
   else if (child_pid == 0)
