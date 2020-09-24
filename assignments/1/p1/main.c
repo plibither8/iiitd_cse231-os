@@ -26,7 +26,7 @@ void throw_error(char *msg)
 // if it couldn't be opened
 int open_file()
 {
-  int fd = open("marks.csv", O_RDONLY | O_EXCL);
+  int fd = open("marks.csv", O_RDONLY);
   if (fd == -1)
     throw_error(ERR_FILE_OPEN);
 
