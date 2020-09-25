@@ -1,5 +1,7 @@
 CC = gcc
 
+all: preprocess compile assemble link
+
 # Generate the preprocessed, intermediate file
 preprocess: main.c
 	$(CC) -E main.c -o main.i

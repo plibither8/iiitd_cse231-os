@@ -7,18 +7,19 @@
 #include <unistd.h>
 
 // Error message constants
-char *ERR_FILE_OPEN = "ERR! File could not be opened properly.";
-char *ERR_FILE_SEEK = "ERR! Could not seek in file.";
-char *ERR_FILE_READ = "ERR! Coult not read file.";
-char *ERR_FILE_CLOSE = "ERR! Could not close file.";
-char *ERR_WRITE = "ERR! Could not write to specified stream";
-char *ERR_FORK = "ERR! Could not fork parent.";
+#define ERR_FILE_OPEN "ERR! File could not be opened properly."
+#define ERR_FILE_SEEK "ERR! Could not seek in file."
+#define ERR_FILE_READ "ERR! Coult not read file."
+#define ERR_FILE_CLOSE "ERR! Could not close file."
+#define ERR_WRITE "ERR! Could not write to specified stream"
+#define ERR_FORK "ERR! Could not fork parent."
 
 // Simple wrapper to take in error message
 // and print out to stderr stream
 void throw_error(char *msg)
 {
-  fprintf(stderr, "%s\n", msg);
+  write(STDERR_FILENO, msg, strlen(msg));
+  write(STDERR_FILENO, "\n", 1);
   exit(1);
 }
 
@@ -106,7 +107,7 @@ void parse_line(char *line, char section)
   snprintf(text, 20, "%d: %f\n", student_id, average);
 
   // Write final output to stdout
-  if (write(1, text, strlen(text)) == -1)
+  if (write(STDOUT_FILENO, text, strlen(text)) == -1)
     throw_error(ERR_WRITE);
 
   free(text);
@@ -149,7 +150,10 @@ int main(int argc, char *argv[])
     int file_length = get_file_length(fd);
     char *file_content = read_file(fd, file_length);
 
-    printf("Section A:\n");
+    char *heading = "Section A:\n";
+    if (write(STDOUT_FILENO, heading, strlen(heading)) == -1)
+      throw_error(ERR_WRITE);
+
     parse_file(file_content, 'A');
 
     close_file(fd, file_content);
@@ -163,7 +167,10 @@ int main(int argc, char *argv[])
     int file_length = get_file_length(fd);
     char *file_content = read_file(fd, file_length);
 
-    printf("\n\nSection B:\n");
+    char *heading = "\n\nSection B:\n";
+    if (write(STDOUT_FILENO, heading, strlen(heading)) == -1)
+      throw_error(ERR_WRITE);
+
     parse_file(file_content, 'B');
 
     close_file(fd, file_content);
