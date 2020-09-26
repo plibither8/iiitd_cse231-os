@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
       else if (strcmp(arg, "--force") == 0) flag.force = 1;
       else
       {
-        fprintf(stderr, "cat: unrecognized option '%s'\n", arg);
+        fprintf(stderr, "rm: unrecognized option '%s'\n", arg);
         exit(EXIT_FAILURE);
       }
       continue;
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
         else if (letter == 'f') flag.force = 1;
         else
         {
-          fprintf(stderr, "cat: invalid option -- '%c'\n", letter);
+          fprintf(stderr, "rm: invalid option -- '%c'\n", letter);
           exit(EXIT_FAILURE);
         }
       }
