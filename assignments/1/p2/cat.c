@@ -72,7 +72,6 @@ void stdin_loop(int *line_number)
 
 int main(int argc, char *argv[])
 {
-
   char *paths[argc];
   int path_count = 0;
   flags flag = { 0, 0 };

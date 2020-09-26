@@ -2,13 +2,13 @@ CC = gcc
 CC_FLAGS = -o
 ODIR = bin
 
-all: prepare mihish cat rm ls mkdir date
+all: prepare p8sh cat rm ls mkdir date
 
 prepare:
 	mkdir -p bin
 
-mihish: mihish.c
-	$(CC) $(CC_FLAGS) mihish mihish.c
+p8sh: p8sh.c
+	$(CC) $(CC_FLAGS) p8sh p8sh.c
 
 cat: cat.c
 	$(CC) $(CC_FLAGS) $(ODIR)/cat cat.c -lm

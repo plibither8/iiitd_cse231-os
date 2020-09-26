@@ -6,4 +6,4 @@
 *.o
 *.i
 !Makefile
-tests/
+tests/*
