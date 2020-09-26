@@ -11,7 +11,7 @@ mihish: mihish.c
 	$(CC) $(CC_FLAGS) mihish mihish.c
 
 cat: cat.c
-	$(CC) $(CC_FLAGS) $(ODIR)/cat cat.c
+	$(CC) $(CC_FLAGS) $(ODIR)/cat cat.c -lm
 
 rm: rm.c
 	$(CC) $(CC_FLAGS) $(ODIR)/rm rm.c

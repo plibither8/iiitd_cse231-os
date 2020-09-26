@@ -20,14 +20,14 @@ void throw_error(char *msg)
 {
   write(STDERR_FILENO, msg, strlen(msg));
   write(STDERR_FILENO, "\n", 1);
-  exit(1);
+  exit(EXIT_FAILURE);
 }
 
 // Open the csv file and produce error
 // if it couldn't be opened
-int open_file()
+int open_file(char *filename)
 {
-  int fd = open("marks.csv", O_RDONLY);
+  int fd = open(filename, O_RDONLY);
   if (fd == -1)
     throw_error(ERR_FILE_OPEN);
 
@@ -93,7 +93,7 @@ void parse_line(char *line, char section)
   if (student_section != section) return;
 
   // Loop over next ints, calc sum and count
-  while ((token = strtok_r(NULL, delim, &saveptr)))
+  while (token = strtok_r(NULL, delim, &saveptr))
   {
     sum += atoi(token);
     count++;
@@ -132,7 +132,7 @@ void parse_file(char *file_content, char section)
     // Parse the current line
     parse_line(line, section);
   }
-  while ((line = strtok_r(NULL, delim, &saveptr)));
+  while (line = strtok_r(NULL, delim, &saveptr));
 }
 
 int main(int argc, char *argv[])
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
   }
   else if (child_pid == 0)
   { // Child process
-    int fd = open_file();
+    int fd = open_file("marks.csv");
     int file_length = get_file_length(fd);
     char *file_content = read_file(fd, file_length);
 
@@ -157,13 +157,13 @@ int main(int argc, char *argv[])
     parse_file(file_content, 'A');
 
     close_file(fd, file_content);
-    exit(0);
+    exit(EXIT_SUCCESS);
   }
   else
   { // Parent process
     waitpid(child_pid, NULL, 0);
 
-    int fd = open_file();
+    int fd = open_file("marks.csv");
     int file_length = get_file_length(fd);
     char *file_content = read_file(fd, file_length);
 

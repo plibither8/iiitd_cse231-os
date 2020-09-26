@@ -21,6 +21,8 @@ typedef struct flags
   int inode;
 } flags;
 
+int ERR_STATUS = 0;
+
 void print_entry(entry entry, flags flag)
 {
   if (flag.list)
@@ -55,6 +57,7 @@ int check_file_exists_is_file(char *path, flags flag)
   if(stat(path, &f_status) == -1)
   {
     fprintf(stderr, "ls: cannot access '%s': No such file or directory\n", path);
+    ERR_STATUS = 1;
     return 1;
   }
 
@@ -145,7 +148,7 @@ int main(int argc, char *argv[])
       else
       {
         fprintf(stderr, "ls: unrecognized option '%s'\n", arg);
-        exit(1);
+        exit(EXIT_FAILURE);
       }
       continue;
     }
@@ -162,7 +165,7 @@ int main(int argc, char *argv[])
         else
         {
           fprintf(stderr, "ls: invalid option -- '%c'\n", letter);
-          exit(1);
+          exit(EXIT_FAILURE);
         }
       }
       continue;
@@ -205,5 +208,5 @@ int main(int argc, char *argv[])
     }
   }
 
-  return 0;
+  return ERR_STATUS;
 }
