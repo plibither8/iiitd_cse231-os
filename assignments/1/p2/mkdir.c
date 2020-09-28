@@ -14,13 +14,44 @@ typedef struct flags
 
 int ERR_STATUS = 0;
 
+void parse_mode(char *raw_mode, flags flag)
+{
+  mode_t mode = (mode_t)strtol(raw_mode, NULL, 8);
+  if (
+      (errno == ERANGE && (mode == LONG_MAX || mode == LONG_MIN)) ||
+      (mode == 0))
+  {
+    fprintf(stderr, "mkdir: invalid mode '%s'", raw_mode);
+    exit(EXIT_FAILURE);
+  }
+
+  flag.mode = mode;
+}
+
+char *resolve_path(char *cwd, char *arg)
+{
+  char *new_path = (char *)calloc(200, sizeof(char));
+  if (arg[0] == '/')
+    strcpy(new_path, arg);
+  else
+  {
+    strcpy(new_path, cwd);
+    strcat(new_path, "/");
+    strcat(new_path, arg);
+  }
+  return new_path;
+}
+
 int main(int argc, char *argv[])
 {
-  char *paths[argc];
-  int path_count = 0;
-  flags flag = { 0, 0775 };
+  char *cwd = argv[0];
 
-  for (int i = 1; i < argc; i++)
+  char *a_paths[argc - 1];
+  char *r_paths[argc - 1];
+  int path_count = 0;
+  flags flag = { 0, 0 };
+
+  for (int i = 2; i < argc; i++)
   {
     char *arg = argv[i];
 
@@ -37,17 +68,7 @@ int main(int argc, char *argv[])
         if (strcmp(keyword, "--mode=") == 0)
         {
           char *raw_mode = &arg[7];
-          mode_t mode = (mode_t) strtol(raw_mode, NULL, 10);
-          if (
-            (errno == ERANGE && (mode == LONG_MAX || mode == LONG_MIN)) ||
-            (mode == 0)
-          )
-          {
-            fprintf(stderr, "mkdir: invalid mode '%s'", raw_mode);
-            exit(EXIT_FAILURE);
-          }
-
-          flag.mode = mode;
+          parse_mode(raw_mode, flag);
         }
         else {
           fprintf(stderr, "mkdir: unrecognized option '%s'\n", arg);
@@ -60,14 +81,21 @@ int main(int argc, char *argv[])
     // Single dash keyword letter options
     if (strlen(arg) > 1 && arg[0] == '-')
     {
-      for (int j = 1; j < strlen(arg); j++)
+      if (strcmp(arg, "-v") == 0) flag.verbose = 1;
+      else
       {
-        char letter = arg[j];
-        if (letter == 'V') flag.verbose = 1;
-        else if (letter == 'p') flag.mode = 1;
+        char keyword[4];
+        memcpy(keyword, arg, 3);
+        keyword[3] = '\0';
+
+        if (strcmp(keyword, "-m=") == 0)
+        {
+          char *raw_mode = &arg[7];
+          parse_mode(raw_mode, flag);
+        }
         else
         {
-          fprintf(stderr, "mkdir: invalid option -- '%c'\n", letter);
+          fprintf(stderr, "mkdir: invalid option -- '%c'\n", arg[1]);
           exit(EXIT_FAILURE);
         }
       }
@@ -75,10 +103,9 @@ int main(int argc, char *argv[])
     }
 
     // This argument is not an option/flag its a path to be cat'ed
-    paths[path_count++] = arg;
+    a_paths[path_count] = resolve_path(cwd, arg);
+    r_paths[path_count++] = arg;
   }
-
-  umask(flag.mode);
 
   if (path_count == 0)
   {
@@ -88,9 +115,10 @@ int main(int argc, char *argv[])
 
   for (int i = 0; i < path_count; i++)
   {
-    char *path = paths[i];
+    char *a_path = a_paths[i];
+    char *r_path = r_paths[i];
 
-    if (mkdir(path, flag.mode) == -1)
+    if (mkdir(a_path, flag.mode ? flag.mode : 0755) == -1)
     {
       switch (errno)
       {
@@ -98,7 +126,7 @@ int main(int argc, char *argv[])
           fprintf(
             stderr,
             "mkdir: cannot create directory '%s': Permission denied\n",
-            path
+            r_path
           );
           break;
 
@@ -106,7 +134,7 @@ int main(int argc, char *argv[])
           fprintf(
             stderr,
             "mkdir: cannot create directory '%s': File exits\n",
-            path
+            r_path
           );
           break;
 
@@ -114,7 +142,7 @@ int main(int argc, char *argv[])
           fprintf(
             stderr,
             "mkdir: cannot create directory '%s': No such file or directory\n",
-            path
+            r_path
           );
       }
 
@@ -123,7 +151,7 @@ int main(int argc, char *argv[])
     }
 
     if (flag.verbose)
-      printf("mkdir: created directory '%s'\n", path);
+      printf("mkdir: created directory '%s'\n", r_path);
   }
 
   return 0;

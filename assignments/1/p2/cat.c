@@ -46,6 +46,20 @@ char *inputString()
   return realloc(str, sizeof(char) * len);
 }
 
+char *resolve_path(char *cwd, char *arg)
+{
+  char *new_path = (char *)calloc(200, sizeof(char));
+  if (arg[0] == '/')
+    strcpy(new_path, arg);
+  else
+  {
+    strcpy(new_path, cwd);
+    strcat(new_path, "/");
+    strcat(new_path, arg);
+  }
+  return new_path;
+}
+
 void print_line_number(int line_number)
 {
   int number_length = floor(log10(line_number)) + 1;
@@ -72,11 +86,13 @@ void stdin_loop(int *line_number)
 
 int main(int argc, char *argv[])
 {
-  char *paths[argc];
+  char *cwd = argv[0];
+
+  char *paths[argc - 1];
   int path_count = 0;
   flags flag = { 0, 0 };
 
-  for (int i = 1; i < argc; i++)
+  for (int i = 2; i < argc; i++)
   {
     char *arg = argv[i];
 
@@ -111,7 +127,7 @@ int main(int argc, char *argv[])
     }
 
     // This argument is not an option/flag its a path to be cat'ed
-    paths[path_count++] = arg;
+    paths[path_count++] = resolve_path(cwd, arg);
   }
 
   int line_number = 0;

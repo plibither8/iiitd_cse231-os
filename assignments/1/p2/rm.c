@@ -12,13 +12,30 @@ typedef struct flags
 
 int ERR_STATUS = 0;
 
+char *resolve_path(char *cwd, char *arg)
+{
+  char *new_path = (char *)calloc(200, sizeof(char));
+  if (arg[0] == '/')
+    strcpy(new_path, arg);
+  else
+  {
+    strcpy(new_path, cwd);
+    strcat(new_path, "/");
+    strcat(new_path, arg);
+  }
+  return new_path;
+}
+
 int main(int argc, char *argv[])
 {
-  char *paths[argc];
+  char *cwd = argv[0];
+
+  char *a_paths[argc - 1];
+  char *r_paths[argc - 1];
   int path_count = 0;
   flags flag = { 0, 0 };
 
-  for (int i = 1; i < argc; i++)
+  for (int i = 2; i < argc; i++)
   {
     char *arg = argv[i];
 
@@ -53,7 +70,8 @@ int main(int argc, char *argv[])
     }
 
     // This argument is not an option/flag its a path to be cat'ed
-    paths[path_count++] = arg;
+    a_paths[path_count] = resolve_path(cwd, arg);
+    r_paths[path_count++] = arg;
   }
 
   if (path_count == 0 && !flag.force)
@@ -64,8 +82,9 @@ int main(int argc, char *argv[])
 
   for (int i = 0; i < path_count; i++)
   {
-    char *path = paths[i];
-    if (unlink(path) == -1)
+    char *a_path = a_paths[0];
+    char *r_path = r_paths[0];
+    if (unlink(a_path) == -1)
     {
       switch (errno)
       {
@@ -73,7 +92,7 @@ int main(int argc, char *argv[])
           fprintf(
             stderr,
             "rm: cannot remove '%s': Permission denied\n",
-            path
+            r_path
           );
           break;
 
@@ -81,7 +100,7 @@ int main(int argc, char *argv[])
           fprintf(
             stderr,
             "rm: cannot remove '%s': Is a directory\n",
-            path
+            r_path
           );
           break;
 
@@ -90,7 +109,7 @@ int main(int argc, char *argv[])
             fprintf(
               stderr,
               "rm: cannot remove '%s': No such file or directory\n",
-              path
+              r_path
             );
       }
 
@@ -99,7 +118,7 @@ int main(int argc, char *argv[])
     }
 
     if (flag.verbose)
-      printf("Removed '%s'\n", path);
+      printf("Removed '%s'\n", r_path);
   }
 
   return 0;

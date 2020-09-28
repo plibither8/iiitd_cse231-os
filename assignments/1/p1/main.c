@@ -78,7 +78,7 @@ void parse_line(char *line, char section)
   char student_section;
   char *token;
   char *saveptr;
-  char *delim = ",";
+  char *delim = " ";
 
   // Student ID
   token = strtok_r(line, delim, &saveptr);

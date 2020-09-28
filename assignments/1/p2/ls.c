@@ -6,8 +6,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define CURRENT_DIR "./"
-
 typedef struct entry
 {
   char *name;
@@ -50,13 +48,13 @@ int get_entry_count(char *path)
   return count;
 }
 
-int check_file_exists_is_file(char *path, flags flag)
+int check_file_exists_is_file(char *a_path, char *r_path, flags flag)
 {
   struct stat f_status = { 0 };
 
-  if(stat(path, &f_status) == -1)
+  if(stat(a_path, &f_status) == -1)
   {
-    fprintf(stderr, "ls: cannot access '%s': No such file or directory\n", path);
+    fprintf(stderr, "ls: cannot access '%s': No such file or directory\n", r_path);
     ERR_STATUS = 1;
     return 1;
   }
@@ -64,7 +62,7 @@ int check_file_exists_is_file(char *path, flags flag)
   if (S_ISREG(f_status.st_mode))
   {
     if (!flag.list) printf("\n");
-    print_entry((entry) { path, f_status.st_ino }, flag);
+    print_entry((entry) { r_path, f_status.st_ino }, flag);
     return 1;
   }
 
@@ -128,15 +126,34 @@ void ls_directory(char *path, flags flag)
     for (int i = 0; i < active_entry_count; i++)
       print_entry(entries[i], flag);
   }
+
+  free(path);
+}
+
+char *resolve_path(char *cwd, char *arg)
+{
+  char *new_path = (char *) calloc(200, sizeof(char));
+  if (arg[0] == '/')
+    strcpy(new_path, arg);
+  else
+  {
+    strcpy(new_path, cwd);
+    strcat(new_path, "/");
+    strcat(new_path, arg);
+  }
+  return new_path;
 }
 
 int main(int argc, char *argv[])
 {
-  char *paths[argc];
+  char *cwd = argv[0];
+
+  char *a_paths[argc - 1];
+  char *r_paths[argc - 1];
   int path_count = 0;
   flags flag = { 0, 0, 0 };
 
-  for (int i = 1; i < argc; i++)
+  for (int i = 2; i < argc; i++)
   {
     char *arg = argv[i];
 
@@ -172,29 +189,33 @@ int main(int argc, char *argv[])
     }
 
     // This argument is not an option/flag its a path to be ls'ed
-    paths[path_count++] = arg;
+    a_paths[path_count] = resolve_path(cwd, arg);
+    r_paths[path_count++] = arg;
   }
 
   // If no path is provided in the args, we take the cwd
   if (path_count == 0)
   {
-    paths[0] = CURRENT_DIR;
+    a_paths[0] = resolve_path(cwd, "");
+    r_paths[0] = "";
     path_count++;
   }
 
   if (path_count == 1)
   {
-    char *path = paths[0];
-    if (!check_file_exists_is_file(path, flag))
-      ls_directory(paths[0], flag);
+    char *a_path = a_paths[0];
+    char *r_path = r_paths[0];
+    if (!check_file_exists_is_file(a_path, r_path, flag))
+      ls_directory(a_path, flag);
   }
   else
   {
     for (int i = 0; i < path_count; i++)
     {
-      char *path = paths[i];
+      char *a_path = a_paths[i];
+      char *r_path = r_paths[i];
 
-      if (check_file_exists_is_file(path, flag))
+      if (check_file_exists_is_file(a_path, r_path, flag))
       {
         printf("\n");
         continue;
@@ -202,8 +223,8 @@ int main(int argc, char *argv[])
 
       if (i > 0 && !flag.list)
         printf("\n");
-      printf("%s:\n", path);
-      ls_directory(path, flag);
+      printf("%s:\n", r_path);
+      ls_directory(a_path, flag);
       printf("\n");
     }
   }
