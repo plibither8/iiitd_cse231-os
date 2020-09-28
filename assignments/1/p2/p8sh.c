@@ -284,6 +284,8 @@ int cd(char *cwd, int argc, char *argv[])
         else
         {
           fprintf(stderr, "p8sh: cd: -'%c': invalid option\n", letter);
+          free(r_target);
+          free(r_target_save);
           return 1;
         }
       }
@@ -326,12 +328,17 @@ int cd(char *cwd, int argc, char *argv[])
   if (!dir)
   {
     fprintf(stderr, "p8sh: cd: no such file or directory: %s\n", r_target_save);
+    free(r_target);
+    free(r_target_save);
     closedir(dir);
     return 1;
   }
 
-  closedir(dir);
   strcpy(cwd, a_target);
+
+  free(r_target);
+  free(r_target_save);
+  closedir(dir);
   return 0;
 }
 
