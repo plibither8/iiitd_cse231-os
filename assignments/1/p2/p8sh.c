@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <wordexp.h>
 
-#define MAX_INP_SIZE 200
+#define MAX_INP_SIZE 300
 #define HISTORY_FILE "./.p8sh_history"
 
 int echo(int argc, char *argv[])
@@ -68,9 +68,20 @@ int echo(int argc, char *argv[])
   return 0;
 }
 
+FILE *open_history(char *mode)
+{
+  FILE *fd = fopen(HISTORY_FILE, mode);
+  if (fd == NULL)
+  {
+    perror("history");
+    exit(1);
+  }
+  return fd;
+}
+
 int get_history_count()
 {
-  FILE *fd = fopen(HISTORY_FILE, "r");
+  FILE *fd = open_history("r");
   int count = 0;
   char ch;
   while(!feof(fd))
@@ -85,23 +96,20 @@ int get_history_count()
 
 void add_to_history(char *cmd)
 {
-  FILE *fd = fopen(HISTORY_FILE, "a");
-  if (ftell(fd) > 0)
-    fprintf(fd, "\n");
-  fprintf(fd, "%s", cmd);
-  fflush(fd);
+  FILE *fd = open_history("a");
+  fprintf(fd, "%s%s", ftell(fd) ? "\n" : "", cmd);
   fclose(fd);
 }
 
 int delete_history_offset(int offset)
 {
-  FILE *fd = fopen(HISTORY_FILE, "r+");
+  FILE *fd = open_history("r+");
 
   fseek(fd, 0, SEEK_END);
   long file_length = ftell(fd);
   fseek(fd, 0, SEEK_SET);
 
-  char *new_content = (char *) calloc(file_length, sizeof(char));
+  char new_content[file_length];
   int count = 0, deleted = 0;
 
   while (!feof(fd))
@@ -125,7 +133,6 @@ int delete_history_offset(int offset)
     fprintf(fd, "%s", new_content);
   }
 
-  free(new_content);
   fclose(fd);
   return 0;
 }
@@ -147,7 +154,7 @@ int history(int argc, char *argv[])
 
     if (strcmp(arg, "-c") == 0)
     {
-      FILE *fd = fopen(HISTORY_FILE, "w");
+      FILE *fd = open_history("w");
       fclose(fd);
       return 0;
     }
@@ -181,7 +188,7 @@ int history(int argc, char *argv[])
     n_arg_found = 1;
   }
 
-  FILE *fd = fopen(HISTORY_FILE, "r");
+  FILE *fd = open_history("r");
 
   int count = 0;
   int total_lines = get_history_count();
@@ -215,7 +222,7 @@ int history(int argc, char *argv[])
   return 0;
 }
 
-int pwd(char *cwd, int argc, char *argv[])
+int pwd(char cwd[], int argc, char *argv[])
 {
   int print_physical = 0;
 
@@ -255,13 +262,14 @@ void cd_up(char *a_path)
   a_path[index] = '\0';
 }
 
-int cd(char *cwd, int argc, char *argv[])
+int cd(char cwd[], int argc, char *argv[])
 {
   int print_physical = 0;
   int arg_count = 0;
   char *r_target = (char *) calloc(MAX_INP_SIZE, sizeof(char));
   char *r_target_save = (char *) calloc(MAX_INP_SIZE, sizeof(char));
-  char *a_target = strdup(cwd);
+  char a_target[MAX_INP_SIZE];
+  strcpy(a_target, cwd);
 
   for (int i = 0; i < argc; i++)
   {
@@ -284,8 +292,6 @@ int cd(char *cwd, int argc, char *argv[])
         else
         {
           fprintf(stderr, "p8sh: cd: -'%c': invalid option\n", letter);
-          free(r_target);
-          free(r_target_save);
           return 1;
         }
       }
@@ -297,8 +303,13 @@ int cd(char *cwd, int argc, char *argv[])
     arg_count++;
   }
 
-  if (strcmp(r_target, ".") == 0)
-    a_target = a_target;
+  if (
+    strcmp(r_target, ".") == 0 ||
+    strcmp(r_target, "./") == 0
+  )
+  {
+    // do nothing
+  }
   else if (strcmp(r_target, "..") == 0)
     cd_up(a_target);
   else
@@ -322,27 +333,23 @@ int cd(char *cwd, int argc, char *argv[])
   }
 
   if (print_physical)
-    a_target = realpath(a_target, NULL);
+    strcpy(a_target, realpath(a_target, NULL));
 
   DIR *dir = opendir(a_target);
   if (!dir)
   {
     fprintf(stderr, "p8sh: cd: no such file or directory: %s\n", r_target_save);
-    free(r_target);
-    free(r_target_save);
     closedir(dir);
     return 1;
   }
 
   strcpy(cwd, a_target);
 
-  free(r_target);
-  free(r_target_save);
   closedir(dir);
   return 0;
 }
 
-int fork_and_exec(char *cmd, 
+int fork_and_exec(char cmd[], 
   int argc, char *argv[], char *cwd)
 {
   char **n_argv = malloc((argc + 2) * sizeof(*n_argv));
@@ -372,11 +379,11 @@ int fork_and_exec(char *cmd,
   }
 }
 
-int check_internal(char *cwd, wordexp_t we)
+int check_internal(char cwd[], wordexp_t we)
 {
   char *cmd_name = we.we_wordv[0];
-  int argc = we.we_wordc - 1;
   char **argv = &we.we_wordv[1];
+  int argc = we.we_wordc - 1;
 
   if (strcmp(cmd_name, "cd") == 0)
     return cd(cwd, argc, argv);
@@ -399,7 +406,7 @@ int check_internal(char *cwd, wordexp_t we)
   return -1;
 }
 
-int check_external(char *cwd, wordexp_t we)
+int check_external(char cwd[], wordexp_t we)
 {
   char *cmd_name = we.we_wordv[0];
   int argc = we.we_wordc;
