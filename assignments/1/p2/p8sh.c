@@ -15,69 +15,12 @@
 #define MAX_INP_SIZE 200
 #define HISTORY_FILE "./.p8sh_history"
 
-int is_dir(char *path)
-{
-  DIR *dir = opendir(path);
-  if (dir)
-  {
-    closedir(dir);
-    return 1;
-  }
-  else if (ENOENT == errno)
-    return 0;
-  return 0;
-}
-
-int echo_token(char *token, int interpret_backslash)
-{
-  if (interpret_backslash)
-    printf("%s ", token);
-  else
-  {
-    for (int i = 0; i < strlen(token); i++)
-    {
-      char c = token[i];
-      if (isprint(c))
-        putchar(c);
-      else {
-        switch (c)
-        {
-          case '\\':
-            printf("\\");
-            break;
-          case '\b':
-            printf("\\b");
-            break;
-          case '\f':
-            printf("\\f");
-            break;
-          case '\n':
-            printf("\\n");
-            break;
-          case '\r':
-            printf("\\r");
-            break;
-          case '\t':
-            printf("\\t");
-            break;
-          case '\v':
-            printf("\\v");
-            break;
-          default:
-            printf("%02x", c);
-        }
-      }
-    }
-    printf(" ");
-  }
-}
-
 int echo(int argc, char *argv[])
 {
   struct flags
   {
     int no_newline;
-    int interpret_backslash;
+    int disable_interpret;
   };
 
   char *tokens[argc];
@@ -98,7 +41,7 @@ int echo(int argc, char *argv[])
       {
         char letter = arg[j];
         if (letter == 'n') buffer.no_newline = 1;
-        else if (letter == 'e') buffer.interpret_backslash = 1;
+        else if (letter == 'e') buffer.disable_interpret = 1;
         else {
           is_token = 1;
           buffer = (struct flags) { 0, 0 };
@@ -106,7 +49,7 @@ int echo(int argc, char *argv[])
         }
       }
       flag.no_newline |= buffer.no_newline;
-      flag.interpret_backslash |= buffer.interpret_backslash;
+      flag.disable_interpret |= buffer.disable_interpret;
       if (!is_token)
         continue;
     }
@@ -117,9 +60,7 @@ int echo(int argc, char *argv[])
   }
 
   for (int i = 0; i < token_count; i++)
-  {
-    echo_token(tokens[i], flag.interpret_backslash);
-  }
+    printf("%s ", tokens[i]);
 
   if (!flag.no_newline)
     printf("\n");
@@ -150,13 +91,6 @@ void add_to_history(char *cmd)
   fprintf(fd, "%s", cmd);
   fflush(fd);
   fclose(fd);
-}
-
-void clear_history()
-{
-  FILE *fd = fopen(HISTORY_FILE, "w");
-  fclose(fd);
-  return;
 }
 
 int delete_history_offset(int offset)
@@ -196,17 +130,6 @@ int delete_history_offset(int offset)
   return 0;
 }
 
-void print_history_line_number(int line_number)
-{
-  int number_length = floor(log10(line_number)) + 1;
-  int padsize = 6 - number_length;
-
-  for (int i = 0; i < padsize; i++)
-    printf(" ");
-
-  printf("%d  ", line_number);
-}
-
 int history(int argc, char *argv[])
 {
   int n_arg = 0;
@@ -224,7 +147,8 @@ int history(int argc, char *argv[])
 
     if (strcmp(arg, "-c") == 0)
     {
-      clear_history();
+      FILE *fd = fopen(HISTORY_FILE, "w");
+      fclose(fd);
       return 0;
     }
 
@@ -273,12 +197,19 @@ int history(int argc, char *argv[])
       n_arg_found && count > total_lines - n_arg + 1
     )
     {
-      print_history_line_number(count);
+      int number_length = floor(log10(count)) + 1;
+      int padsize = 6 - number_length;
+
+      for (int i = 0; i < padsize; i++)
+        printf(" ");
+
+      printf("%d  ", count);
       printf("%s", line);
     }
 
     free(line);
   }
+  printf("\n");
 
   fclose(fd);
   return 0;
@@ -391,28 +322,21 @@ int cd(char *cwd, int argc, char *argv[])
   if (print_physical)
     a_target = realpath(a_target, NULL);
 
-  if (!is_dir(a_target))
+  DIR *dir = opendir(a_target);
+  if (!dir)
   {
     fprintf(stderr, "p8sh: cd: no such file or directory: %s\n", r_target_save);
+    closedir(dir);
     return 1;
   }
 
+  closedir(dir);
   strcpy(cwd, a_target);
   return 0;
 }
 
-void print_header()
-{
-  printf("Welcome to\n\n");
-  printf("██████   █████  ███████ ██   ██ \n");
-  printf("██   ██ ██   ██ ██      ██   ██ \n");
-  printf("██████   █████  ███████ ███████ \n");
-  printf("██      ██   ██      ██ ██   ██ \n");
-  printf("██       █████  ███████ ██   ██ \n\n");
-  printf("Available commands:\n\tcd, pwd, history, echo, ls, cat, date, mkdir, rm, exit\n\n");
-}
-
-int fork_and_exec(char *cmd, int argc, char **argv, char *cwd)
+int fork_and_exec(char *cmd, 
+  int argc, char *argv[], char *cwd)
 {
   char **n_argv = malloc((argc + 2) * sizeof(*n_argv));
   memmove(&n_argv[1], argv, sizeof(*n_argv) * argc);
@@ -506,6 +430,17 @@ int check_external(char *cwd, wordexp_t we)
   }
 
   return -1;
+}
+
+void print_header()
+{
+  printf("Welcome to\n\n");
+  printf("██████   █████  ███████ ██   ██\n");
+  printf("██   ██ ██   ██ ██      ██   ██\n");
+  printf("██████   █████  ███████ ███████\n");
+  printf("██      ██   ██      ██ ██   ██\n");
+  printf("██       █████  ███████ ██   ██\n\n");
+  printf("Available commands:\n\tcd, pwd, history, echo, ls, cat, date, mkdir, rm, exit\n\n");
 }
 
 int main(int argc, char *argv[])
