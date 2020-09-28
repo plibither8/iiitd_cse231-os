@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +13,7 @@
 #include <wordexp.h>
 
 #define MAX_INP_SIZE 200
+#define HISTORY_FILE "./.p8sh_history"
 
 int is_dir(char *path)
 {
@@ -125,14 +127,84 @@ int echo(int argc, char *argv[])
   return 0;
 }
 
+int get_history_count()
+{
+  FILE *fd = fopen(HISTORY_FILE, "r");
+  int count = 0;
+  char ch;
+  while(!feof(fd))
+  {
+    ch = fgetc(fd);
+    if (ch == '\n')
+      count++;
+  }
+  fclose(fd);
+  return count;
+}
+
+void add_to_history(char *cmd)
+{
+  FILE *fd = fopen(HISTORY_FILE, "a");
+  if (ftell(fd) > 0)
+    fprintf(fd, "\n");
+  fprintf(fd, "%s", cmd);
+  fflush(fd);
+  fclose(fd);
+}
+
 void clear_history()
 {
+  FILE *fd = fopen(HISTORY_FILE, "w");
+  fclose(fd);
   return;
 }
 
 int delete_history_offset(int offset)
 {
+  FILE *fd = fopen(HISTORY_FILE, "r+");
+
+  fseek(fd, 0, SEEK_END);
+  long file_length = ftell(fd);
+  fseek(fd, 0, SEEK_SET);
+
+  char *new_content = (char *) calloc(file_length, sizeof(char));
+  int count = 0, deleted = 0;
+
+  while (!feof(fd))
+  {
+    char *line = (char *) calloc(MAX_INP_SIZE, sizeof(char));
+    fgets(line, MAX_INP_SIZE, fd);
+    if (++count == offset)
+    {
+      deleted = 1;
+      continue;
+    }
+    strcat(new_content, line);
+    free(line);
+  }
+
+  if (!deleted)
+    fprintf(stderr, "p8sh: history: %d: history position out of range\n", offset);
+  else
+  {
+    fd = freopen(HISTORY_FILE, "w", fd);
+    fprintf(fd, "%s", new_content);
+  }
+
+  free(new_content);
+  fclose(fd);
   return 0;
+}
+
+void print_history_line_number(int line_number)
+{
+  int number_length = floor(log10(line_number)) + 1;
+  int padsize = 6 - number_length;
+
+  for (int i = 0; i < padsize; i++)
+    printf(" ");
+
+  printf("%d  ", line_number);
 }
 
 int history(int argc, char *argv[])
@@ -167,6 +239,8 @@ int history(int argc, char *argv[])
       int del_offset = atoi(argv[i + 1]);
       if (delete_history_offset(del_offset))
         return 1;
+
+      return 0;
     }
 
     int j = 0;
@@ -183,6 +257,30 @@ int history(int argc, char *argv[])
     n_arg_found = 1;
   }
 
+  FILE *fd = fopen(HISTORY_FILE, "r");
+
+  int count = 0;
+  int total_lines = get_history_count();
+  while (!feof(fd))
+  {
+    count++;
+
+    char *line = (char *)calloc(MAX_INP_SIZE, sizeof(char));
+    fgets(line, MAX_INP_SIZE, fd);
+
+    if (
+      !n_arg_found ||
+      n_arg_found && count > total_lines - n_arg + 1
+    )
+    {
+      print_history_line_number(count);
+      printf("%s", line);
+    }
+
+    free(line);
+  }
+
+  fclose(fd);
   return 0;
 }
 
@@ -427,6 +525,8 @@ int main(int argc, char *argv[])
 
     if(command[0] == '\0' || command[0] == '\n')
       continue;
+
+    add_to_history(command);
 
     wordexp_t we;
     wordexp(command, &we, 0);
