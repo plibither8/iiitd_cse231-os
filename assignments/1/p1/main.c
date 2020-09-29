@@ -138,42 +138,42 @@ void parse_file(char *file_content, char section)
 int main(int argc, char *argv[])
 {
   // Fork the process and store child pid
-  int child_pid = fork();
+  int child_pid = child_pid = fork();
+  switch (child_pid)
+  {
+    case 0:
+    { // Child process
+      int fd = open_file("marks.csv");
+      int file_length = get_file_length(fd);
+      char *file_content = read_file(fd, file_length);
 
-  if (child_pid < 0)
-  { // Error in forking
-    throw_error(ERR_FORK);
-  }
-  else if (child_pid == 0)
-  { // Child process
-    int fd = open_file("marks.csv");
-    int file_length = get_file_length(fd);
-    char *file_content = read_file(fd, file_length);
+      char *heading = "Section A:\n";
+      if (write(STDOUT_FILENO, heading, strlen(heading)) == -1)
+        throw_error(ERR_WRITE);
 
-    char *heading = "Section A:\n";
-    if (write(STDOUT_FILENO, heading, strlen(heading)) == -1)
-      throw_error(ERR_WRITE);
+      parse_file(file_content, 'A');
 
-    parse_file(file_content, 'A');
+      close_file(fd, file_content);
+      _exit(EXIT_SUCCESS);
+    }
+    case -1: // Error in forking
+      throw_error(ERR_FORK);
+    default:
+    { // Parent process
+      waitpid(child_pid, NULL, 0);
 
-    close_file(fd, file_content);
-    exit(EXIT_SUCCESS);
-  }
-  else
-  { // Parent process
-    waitpid(child_pid, NULL, 0);
+      int fd = open_file("marks.csv");
+      int file_length = get_file_length(fd);
+      char *file_content = read_file(fd, file_length);
 
-    int fd = open_file("marks.csv");
-    int file_length = get_file_length(fd);
-    char *file_content = read_file(fd, file_length);
+      char *heading = "\n\nSection B:\n";
+      if (write(STDOUT_FILENO, heading, strlen(heading)) == -1)
+        throw_error(ERR_WRITE);
 
-    char *heading = "\n\nSection B:\n";
-    if (write(STDOUT_FILENO, heading, strlen(heading)) == -1)
-      throw_error(ERR_WRITE);
+      parse_file(file_content, 'B');
 
-    parse_file(file_content, 'B');
-
-    close_file(fd, file_content);
+      close_file(fd, file_content);
+    }
   }
 
   return 0;

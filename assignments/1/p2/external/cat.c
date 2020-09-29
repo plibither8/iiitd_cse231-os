@@ -1,13 +1,9 @@
-#include <dirent.h>
-#include <errno.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 typedef struct flags
 {
@@ -16,35 +12,6 @@ typedef struct flags
 } flags;
 
 int ERR_STATUS = 0;
-
-char *inputString()
-{
-  int ch;
-  size_t len = 0;
-  size_t size = 20;
-
-  char *str;
-  str = realloc(NULL, sizeof(char) * size);
-  if (!str)
-    return str;
-
-  while (ch = fgetc(stdin))
-  {
-    if (ch == EOF || ch == '\n')
-      break;
-
-    str[len++] = ch;
-    if (len == size)
-    {
-      str = realloc(str, sizeof(char) * (size += 16));
-      if (!str)
-        return str;
-    }
-  }
-  str[len++] = '\0';
-
-  return realloc(str, sizeof(char) * len);
-}
 
 void print_line_number(int line_number)
 {
@@ -57,13 +24,15 @@ void print_line_number(int line_number)
   printf("%d  ", line_number);
 }
 
-void stdin_loop(int *line_number)
+void stdin_loop(int *line_number, flags flag)
 {
   while(1)
   {
-    char *string = inputString();
-    print_line_number((intptr_t) ++(*line_number));
-    printf("%s$\n", string);
+    char string[200];
+    scanf("%s", string);
+    if (flag.number)
+      print_line_number((intptr_t) ++(*line_number));
+    printf("%s%s\n", string, flag.show_end ? "$" : "");
 
     if (feof(stdin))
       break;
@@ -120,7 +89,7 @@ int main(int argc, char *argv[])
   // Copy standard input to standard output
   if (path_count == 0)
   {
-    stdin_loop(&line_number);
+    stdin_loop(&line_number, flag);
     return 0;
   }
 
@@ -130,7 +99,7 @@ int main(int argc, char *argv[])
 
     if (strcmp(path, "-") == 0)
     {
-      stdin_loop(&line_number);
+      stdin_loop(&line_number, flag);
       continue;
     }
 

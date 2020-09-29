@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #define CURRENT_DIR "./"
 
@@ -128,8 +126,6 @@ void ls_directory(char *path, flags flag)
     for (int i = 0; i < active_entry_count; i++)
       print_entry(entries[i], flag);
   }
-
-  free(path);
 }
 
 int main(int argc, char *argv[])

@@ -8,19 +8,19 @@ prepare:
 	mkdir -p bin
 
 p8sh: p8sh.c
-	$(CC) $(CC_FLAGS) p8sh p8sh.c -lm -g
+	$(CC) $(CC_FLAGS) p8sh p8sh.c -lm
 
-cat: cat.c
-	$(CC) $(CC_FLAGS) $(ODIR)/cat cat.c -lm
+cat: external/cat.c
+	$(CC) $(CC_FLAGS) $(ODIR)/cat external/cat.c -lm
 
-rm: rm.c
-	$(CC) $(CC_FLAGS) $(ODIR)/rm rm.c
+rm: external/rm.c
+	$(CC) $(CC_FLAGS) $(ODIR)/rm external/rm.c
 
-ls: ls.c
-	$(CC) $(CC_FLAGS) $(ODIR)/ls ls.c
+ls: external/ls.c
+	$(CC) $(CC_FLAGS) $(ODIR)/ls external/ls.c
 
-mkdir: mkdir.c
-	$(CC) $(CC_FLAGS) $(ODIR)/mkdir mkdir.c
+mkdir: external/mkdir.c
+	$(CC) $(CC_FLAGS) $(ODIR)/mkdir external/mkdir.c
 
-date: date.c
-	$(CC) $(CC_FLAGS) $(ODIR)/date date.c
+date: external/date.c
+	$(CC) $(CC_FLAGS) $(ODIR)/date external/date.c
