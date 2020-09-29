@@ -46,20 +46,6 @@ char *inputString()
   return realloc(str, sizeof(char) * len);
 }
 
-char *resolve_path(char *cwd, char *arg)
-{
-  char *new_path = (char *)calloc(200, sizeof(char));
-  if (arg[0] == '/')
-    strcpy(new_path, arg);
-  else
-  {
-    strcpy(new_path, cwd);
-    strcat(new_path, "/");
-    strcat(new_path, arg);
-  }
-  return new_path;
-}
-
 void print_line_number(int line_number)
 {
   int number_length = floor(log10(line_number)) + 1;
@@ -86,14 +72,11 @@ void stdin_loop(int *line_number)
 
 int main(int argc, char *argv[])
 {
-  char *cwd = argv[0];
-
-  char *a_paths[argc - 1];
-  char *r_paths[argc - 1];
+  char *paths[argc];
   int path_count = 0;
   flags flag = { 0, 0 };
 
-  for (int i = 2; i < argc; i++)
+  for (int i = 1; i < argc; i++)
   {
     char *arg = argv[i];
 
@@ -128,8 +111,7 @@ int main(int argc, char *argv[])
     }
 
     // This argument is not an option/flag its a path to be cat'ed
-    a_paths[path_count] = resolve_path(cwd, arg);
-    r_paths[path_count++] = arg;
+    paths[path_count++] = arg;
   }
 
   int line_number = 0;
@@ -144,28 +126,27 @@ int main(int argc, char *argv[])
 
   for (int i = 0; i < path_count; i++)
   {
-    char *a_path = a_paths[i];
-    char *r_path = r_paths[i];
+    char *path = paths[i];
 
-    if (strcmp(a_path, "-") == 0)
+    if (strcmp(path, "-") == 0)
     {
       stdin_loop(&line_number);
       continue;
     }
 
     struct stat path_stat;
-    stat(a_path, &path_stat);
+    stat(path, &path_stat);
     if (!S_ISREG(path_stat.st_mode))
     {
-      fprintf(stderr, "cat: %s: Is a directory\n", r_path);
+      fprintf(stderr, "cat: %s: Is a directory\n", path);
       ERR_STATUS = 1;
       continue;
     }
 
-    FILE *fd = fopen(a_path, "r");
+    FILE *fd = fopen(path, "r");
     if (fd == NULL)
     {
-      fprintf(stderr, "cat: %s: No such file or directory\n", r_path);
+      fprintf(stderr, "cat: %s: No such file or directory\n", path);
       ERR_STATUS = 1;
       continue;
     }

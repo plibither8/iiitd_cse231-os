@@ -28,30 +28,15 @@ void parse_mode(char *raw_mode, flags flag)
   flag.mode = mode;
 }
 
-char *resolve_path(char *cwd, char *arg)
-{
-  char *new_path = (char *)calloc(200, sizeof(char));
-  if (arg[0] == '/')
-    strcpy(new_path, arg);
-  else
-  {
-    strcpy(new_path, cwd);
-    strcat(new_path, "/");
-    strcat(new_path, arg);
-  }
-  return new_path;
-}
-
 int main(int argc, char *argv[])
 {
   char *cwd = argv[0];
 
-  char *a_paths[argc - 1];
-  char *r_paths[argc - 1];
+  char *paths[argc];
   int path_count = 0;
   flags flag = { 0, 0 };
 
-  for (int i = 2; i < argc; i++)
+  for (int i = 1; i < argc; i++)
   {
     char *arg = argv[i];
 
@@ -103,8 +88,7 @@ int main(int argc, char *argv[])
     }
 
     // This argument is not an option/flag its a path to be cat'ed
-    a_paths[path_count] = resolve_path(cwd, arg);
-    r_paths[path_count++] = arg;
+    paths[path_count++] = arg;
   }
 
   if (path_count == 0)
@@ -115,10 +99,9 @@ int main(int argc, char *argv[])
 
   for (int i = 0; i < path_count; i++)
   {
-    char *a_path = a_paths[i];
-    char *r_path = r_paths[i];
+    char *path = paths[i];
 
-    if (mkdir(a_path, flag.mode ? flag.mode : 0755) == -1)
+    if (mkdir(path, flag.mode ? flag.mode : 0755) == -1)
     {
       switch (errno)
       {
@@ -126,7 +109,7 @@ int main(int argc, char *argv[])
           fprintf(
             stderr,
             "mkdir: cannot create directory '%s': Permission denied\n",
-            r_path
+            path
           );
           break;
 
@@ -134,7 +117,7 @@ int main(int argc, char *argv[])
           fprintf(
             stderr,
             "mkdir: cannot create directory '%s': File exits\n",
-            r_path
+            path
           );
           break;
 
@@ -142,7 +125,7 @@ int main(int argc, char *argv[])
           fprintf(
             stderr,
             "mkdir: cannot create directory '%s': No such file or directory\n",
-            r_path
+            path
           );
       }
 
@@ -151,7 +134,7 @@ int main(int argc, char *argv[])
     }
 
     if (flag.verbose)
-      printf("mkdir: created directory '%s'\n", r_path);
+      printf("mkdir: created directory '%s'\n", path);
   }
 
   return 0;

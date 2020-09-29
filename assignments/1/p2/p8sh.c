@@ -13,12 +13,15 @@
 #include <wordexp.h>
 
 #define MAX_INP_SIZE 300
-#define HISTORY_FILE "./.p8sh_history"
+#define HISTORY_FILE "/.p8sh_history"
 
 typedef struct WD {
   char current[MAX_INP_SIZE];
   char previous[MAX_INP_SIZE];
+  char start[MAX_INP_SIZE];
 } WD;
+
+WD working_dirs;
 
 int echo(int argc, char *argv[])
 {
@@ -75,7 +78,10 @@ int echo(int argc, char *argv[])
 
 FILE *open_history(char *mode)
 {
-  FILE *fd = fopen(HISTORY_FILE, mode);
+  char history_file[MAX_INP_SIZE];
+  strcpy(history_file, working_dirs.start);
+  strcat(history_file, HISTORY_FILE);
+  FILE *fd = fopen(history_file, mode);
   if (fd == NULL)
   {
     perror("history");
@@ -134,7 +140,10 @@ int delete_history_offset(int offset)
     fprintf(stderr, "p8sh: history: %d: history position out of range\n", offset);
   else
   {
-    fd = freopen(HISTORY_FILE, "w", fd);
+    char history_file[MAX_INP_SIZE];
+    strcpy(history_file, working_dirs.start);
+    strcat(history_file, HISTORY_FILE);
+    fd = freopen(history_file, "w", fd);
     fprintf(fd, "%s", new_content);
   }
 
@@ -227,7 +236,7 @@ int history(int argc, char *argv[])
   return 0;
 }
 
-int pwd(char cwd[], int argc, char *argv[])
+int pwd(int argc, char *argv[])
 {
   int print_physical = 0;
 
@@ -252,47 +261,29 @@ int pwd(char cwd[], int argc, char *argv[])
   }
 
   if (print_physical)
-    printf("%s\n", realpath(cwd, NULL));
+    printf("%s\n", realpath(working_dirs.current, NULL));
   else
-    printf("%s\n", cwd);
+    printf("%s\n", working_dirs.current);
 
   return 0;
 }
 
-void normalise_slash(char *a_path)
+int parse_cd(char *a_target, char *r_target)
 {
-  char *copy = strdup(a_path);
+  char *copy = strdup(a_target);
   char *ptr = copy;
-
   for (int i = 0; copy[i]; i++)
   {
-    *ptr++ = a_path[i];
-    if (a_path[i] == '/')
+    *ptr++ = a_target[i];
+    if (a_target[i] == '/')
     {
       i++;
-      while (a_path[i] == '/')
-        i++;
+      while (a_target[i] == '/') i++;
       i--;
     }
   }
-
   *ptr = '\0';
-  strcpy(a_path, copy);
-}
-
-void cd_up(char *a_path)
-{
-  if (strcmp(a_path, "/") == 0)
-    return;
-  int index = strlen(a_path) - 1;
-  while(a_path[index] != '/' && index >= 0)
-    index--;
-  a_path[index] = '\0';
-}
-
-int parse_cd(char *a_target, char *r_target)
-{
-  normalise_slash(r_target);
+  strcpy(a_target, copy);
 
   if (r_target[0] == '/')
   {
@@ -315,7 +306,12 @@ int parse_cd(char *a_target, char *r_target)
   do
   {
     if (strcmp(token, "..") == 0)
-      cd_up(new_path);
+    {
+      if (strcmp(new_path, "/") == 0) continue;
+      int index = strlen(new_path) - 1;
+      while (new_path[index] != '/' && index >= 0) index--;
+      new_path[index] = '\0';
+    }
     else if (strcmp(token, ".") == 0)
       continue;
     else
@@ -345,14 +341,14 @@ void cd_free(char *a, char *b)
   free(b);
 }
 
-int cd(WD *w_dirs, int argc, char *argv[])
+int cd(int argc, char *argv[])
 {
   int print_physical = 0;
   int arg_count = 0;
   char *r_target = (char *) calloc(MAX_INP_SIZE, sizeof(char));
   char *r_target_save = (char *) calloc(MAX_INP_SIZE, sizeof(char));
   char a_target[MAX_INP_SIZE];
-  strcpy(a_target, w_dirs->current);
+  strcpy(a_target, working_dirs.current);
 
   for (int i = 0; i < argc; i++)
   {
@@ -389,7 +385,7 @@ int cd(WD *w_dirs, int argc, char *argv[])
   }
 
   if (strcmp(r_target, "-") == 0)
-    strcpy(a_target, w_dirs->previous);
+    strcpy(a_target, working_dirs.previous);
   else
   {
     if (parse_cd(a_target, r_target))
@@ -412,21 +408,17 @@ int cd(WD *w_dirs, int argc, char *argv[])
     return 1;
   }
 
-  strcpy(w_dirs->previous, w_dirs->current);
-  strcpy(w_dirs->current, a_target);
+  strcpy(working_dirs.previous, working_dirs.current);
+  strcpy(working_dirs.current, a_target);
+  chdir(working_dirs.current);
 
   closedir(dir);
   cd_free(r_target, r_target_save);
   return 0;
 }
 
-int fork_and_exec(char cmd[], 
-  int argc, char *argv[], char *cwd)
+int fork_and_exec(char cmd[], int argc, char *argv[])
 {
-  char **n_argv = malloc((argc + 2) * sizeof(*n_argv));
-  memmove(&n_argv[1], argv, sizeof(*n_argv) * argc);
-  n_argv[0] = cwd;
-
   int child_pid = fork();
   if (child_pid < 0)
   {
@@ -435,10 +427,14 @@ int fork_and_exec(char cmd[],
   }
   else if (child_pid == 0)
   {
-    int err = execvp(cmd, n_argv) == -1;
+    char abs_cmd[MAX_INP_SIZE];
+    strcpy(abs_cmd, working_dirs.start);
+    strcat(abs_cmd, cmd);
+
+    int err = execvp(abs_cmd, argv) == -1;
 
     char *errmsg = (char *) calloc(200, sizeof(char));
-    snprintf(errmsg, 200, "%s", n_argv[1]);
+    snprintf(errmsg, 200, "%s", argv[0]);
     perror(errmsg);
 
     free(errmsg);
@@ -450,14 +446,14 @@ int fork_and_exec(char cmd[],
   }
 }
 
-int run_internal(WD *w_dirs, wordexp_t we)
+int run_internal(wordexp_t we)
 {
   char *cmd_name = we.we_wordv[0];
   char **argv = &we.we_wordv[1];
   int argc = we.we_wordc - 1;
 
   if (strcmp(cmd_name, "cd") == 0)
-    return cd(w_dirs, argc, argv);
+    return cd(argc, argv);
 
   if (strcmp(cmd_name, "echo") == 0)
     return echo(argc, argv);
@@ -466,7 +462,7 @@ int run_internal(WD *w_dirs, wordexp_t we)
     return history(argc, argv);
 
   if (strcmp(cmd_name, "pwd") == 0)
-    return pwd(w_dirs->current, argc, argv);
+    return pwd(argc, argv);
 
   if (strcmp(cmd_name, "exit") == 0)
   {
@@ -477,40 +473,39 @@ int run_internal(WD *w_dirs, wordexp_t we)
   return -1;
 }
 
-int run_external(char cwd[], wordexp_t we)
+int run_external(wordexp_t we)
 {
   char *cmd_name = we.we_wordv[0];
   int argc = we.we_wordc;
   char **argv = we.we_wordv;
-  char *cwdcpy = strdup(cwd);
 
   if (strcmp(cmd_name, "ls") == 0)
   {
-    fork_and_exec("./bin/ls", argc, argv, cwdcpy);
+    fork_and_exec("/bin/ls", argc, argv);
     return 0;
   }
 
   if (strcmp(cmd_name, "cat") == 0)
   {
-    fork_and_exec("./bin/cat", argc, argv, cwdcpy);
+    fork_and_exec("/bin/cat", argc, argv);
     return 0;
   }
 
   if (strcmp(cmd_name, "mkdir") == 0)
   {
-    fork_and_exec("./bin/mkdir", argc, argv, cwdcpy);
+    fork_and_exec("/bin/mkdir", argc, argv);
     return 0;
   }
 
   if (strcmp(cmd_name, "rm") == 0)
   {
-    fork_and_exec("./bin/rm", argc, argv, cwdcpy);
+    fork_and_exec("/bin/rm", argc, argv);
     return 0;
   }
 
   if (strcmp(cmd_name, "date") == 0)
   {
-    fork_and_exec("./bin/date", argc, argv, cwdcpy);
+    fork_and_exec("/bin/date", argc, argv);
     return 0;
   }
 
@@ -530,9 +525,10 @@ void print_header()
 
 int main(int argc, char *argv[])
 {
-  WD working_dirs;
+  // Initial setup
   getcwd(working_dirs.current, MAX_INP_SIZE);
   strcpy(working_dirs.previous, working_dirs.current);
+  strcpy(working_dirs.start, working_dirs.current);
 
   print_header();
 
@@ -552,25 +548,14 @@ int main(int argc, char *argv[])
     wordexp_t we;
     int we_ret = wordexp(command, &we, 0);
 
-    if (we_ret)
+    if (we_ret || !we.we_wordc)
     {
       wordfree(&we);
       continue;
     }
 
-    if (!we.we_wordc)
-    {
-      wordfree(&we);
-      continue;
-    }
-
-    if (
-      run_internal(&working_dirs, we) == -1 &&
-      run_external(working_dirs.current, we) == -1
-    )
-    {
+    if (run_internal(we) == -1 && run_external(we) == -1)
       fprintf(stderr, "p8sh: %s: command not found\n", we.we_wordv[0]);
-    }
 
     wordfree(&we);
   }
