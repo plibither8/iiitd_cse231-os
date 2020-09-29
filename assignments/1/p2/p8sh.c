@@ -94,6 +94,7 @@ int run_internal(wordexp_t we)
 
 void print_header()
 {
+  printf("\e[1;1H\e[2J");
   printf(BLU "Welcome to\n\n" RESET);
   printf(GRN "██████   █████  ███████ ██   ██\n");
   printf("██   ██ ██   ██ ██      ██   ██\n");
@@ -119,7 +120,7 @@ int main(int argc, char *argv[])
   int ERR = 0;
   do
   {
-    printf(BLU "\n%s%s\np8sh ❯ " RESET, working_dirs.current, ERR == 0 ? GRN : RED);
+    printf(BLU "\n%s%s\np8sh ❯  " RESET, working_dirs.current, ERR == 0 ? GRN : RED);
     char command[MAX_INP_SIZE];
 
     fgets(command, MAX_INP_SIZE, stdin);
