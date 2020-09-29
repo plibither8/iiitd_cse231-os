@@ -15,6 +15,11 @@
 #define MAX_INP_SIZE 300
 #define HISTORY_FILE "./.p8sh_history"
 
+typedef struct WD {
+  char current[MAX_INP_SIZE];
+  char previous[MAX_INP_SIZE];
+} WD;
+
 int echo(int argc, char *argv[])
 {
   struct flags
@@ -262,14 +267,14 @@ void cd_up(char *a_path)
   a_path[index] = '\0';
 }
 
-int cd(char cwd[], int argc, char *argv[])
+int cd(WD *w_dirs, int argc, char *argv[])
 {
   int print_physical = 0;
   int arg_count = 0;
   char *r_target = (char *) calloc(MAX_INP_SIZE, sizeof(char));
   char *r_target_save = (char *) calloc(MAX_INP_SIZE, sizeof(char));
   char a_target[MAX_INP_SIZE];
-  strcpy(a_target, cwd);
+  strcpy(a_target, w_dirs->current);
 
   for (int i = 0; i < argc; i++)
   {
@@ -303,33 +308,36 @@ int cd(char cwd[], int argc, char *argv[])
     arg_count++;
   }
 
-  if (
-    strcmp(r_target, ".") == 0 ||
-    strcmp(r_target, "./") == 0
-  )
-  {
-    // do nothing
-  }
-  else if (strcmp(r_target, "..") == 0)
-    cd_up(a_target);
+  if (strcmp(r_target, "-") == 0)
+    strcpy(a_target, w_dirs->previous);
   else
   {
-    while (r_target[0] == '.' && r_target[1] == '.' && r_target[2] == '/')
+    while (1)
     {
-      cd_up(a_target);
-      r_target += 3;
-    }
-
-    if (strlen(r_target))
-    {
-      if (r_target[0] != '/')
+      if (
+        strcmp(r_target, "..") == 0 ||
+        r_target[0] == '.' && r_target[1] == '.' && r_target[2] == '/'
+      )
       {
-        strcat(a_target, "/");
-        strcat(a_target, r_target);
+        cd_up(a_target);
+        r_target += strlen(r_target) == 2 ? 2 : 3;
       }
-      else
-        strcpy(a_target, r_target);
+      else if (
+        strcmp(r_target, ".") == 0 ||
+        r_target[0] == '.' && r_target[1] == '/'
+      )
+      {
+        r_target += strlen(r_target) == 1 ? 1 : 2;
+      }
+      else break;
     }
+  }
+
+  if (strlen(r_target))
+  {
+    if (a_target[strlen(a_target) - 1] != '/')
+      strcat(a_target, "/");
+    strcat(a_target, r_target);
   }
 
   if (print_physical)
@@ -338,12 +346,13 @@ int cd(char cwd[], int argc, char *argv[])
   DIR *dir = opendir(a_target);
   if (!dir)
   {
-    fprintf(stderr, "p8sh: cd: no such file or directory: %s\n", r_target_save);
+    fprintf(stderr, "p8sh: cd: no such file or directory: %s\n", a_target);
     closedir(dir);
     return 1;
   }
 
-  strcpy(cwd, a_target);
+  strcpy(w_dirs->previous, w_dirs->current);
+  strcpy(w_dirs->current, a_target);
 
   closedir(dir);
   return 0;
@@ -379,14 +388,14 @@ int fork_and_exec(char cmd[],
   }
 }
 
-int check_internal(char cwd[], wordexp_t we)
+int run_internal(WD *w_dirs, wordexp_t we)
 {
   char *cmd_name = we.we_wordv[0];
   char **argv = &we.we_wordv[1];
   int argc = we.we_wordc - 1;
 
   if (strcmp(cmd_name, "cd") == 0)
-    return cd(cwd, argc, argv);
+    return cd(w_dirs, argc, argv);
 
   if (strcmp(cmd_name, "echo") == 0)
     return echo(argc, argv);
@@ -395,7 +404,7 @@ int check_internal(char cwd[], wordexp_t we)
     return history(argc, argv);
 
   if (strcmp(cmd_name, "pwd") == 0)
-    return pwd(cwd, argc, argv);
+    return pwd(w_dirs->current, argc, argv);
 
   if (strcmp(cmd_name, "exit") == 0)
   {
@@ -406,7 +415,7 @@ int check_internal(char cwd[], wordexp_t we)
   return -1;
 }
 
-int check_external(char cwd[], wordexp_t we)
+int run_external(char cwd[], wordexp_t we)
 {
   char *cmd_name = we.we_wordv[0];
   int argc = we.we_wordc;
@@ -459,15 +468,16 @@ void print_header()
 
 int main(int argc, char *argv[])
 {
-  char current_directory[MAX_INP_SIZE];
-  getcwd(current_directory, MAX_INP_SIZE);
+  WD working_dirs;
+  getcwd(working_dirs.current, MAX_INP_SIZE);
+  strcpy(working_dirs.previous, working_dirs.current);
 
   print_header();
 
   do
   {
-    printf("\n%s ❯ ", current_directory);
-    char *command = (char *) calloc(MAX_INP_SIZE, sizeof(char));
+    printf("\n%s ❯ ", working_dirs.current);
+    char command[MAX_INP_SIZE];
 
     fgets(command, MAX_INP_SIZE, stdin);
     command[strlen(command) - 1] = '\0';
@@ -478,23 +488,29 @@ int main(int argc, char *argv[])
     add_to_history(command);
 
     wordexp_t we;
-    wordexp(command, &we, 0);
+    int we_ret = wordexp(command, &we, 0);
+
+    if (we_ret)
+    {
+      wordfree(&we);
+      continue;
+    }
 
     if (!we.we_wordc)
     {
-      free(command);
+      wordfree(&we);
       continue;
     }
 
     if (
-      check_internal(current_directory, we) == -1 &&
-      check_external(current_directory, we) == -1
+      run_internal(&working_dirs, we) == -1 &&
+      run_external(working_dirs.current, we) == -1
     )
     {
       fprintf(stderr, "p8sh: %s: command not found\n", we.we_wordv[0]);
     }
 
-    free(command);
+    wordfree(&we);
   }
   while(1);
 
