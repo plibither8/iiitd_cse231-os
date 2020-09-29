@@ -270,20 +270,20 @@ int pwd(int argc, char *argv[])
 
 int parse_cd(char *a_target, char *r_target)
 {
-  char *copy = strdup(a_target);
+  char *copy = strdup(r_target);
   char *ptr = copy;
   for (int i = 0; copy[i]; i++)
   {
-    *ptr++ = a_target[i];
-    if (a_target[i] == '/')
+    *ptr++ = r_target[i];
+    if (r_target[i] == '/')
     {
       i++;
-      while (a_target[i] == '/') i++;
+      while (r_target[i] == '/') i++;
       i--;
     }
   }
   *ptr = '\0';
-  strcpy(a_target, copy);
+  strcpy(r_target, copy);
 
   if (r_target[0] == '/')
   {
@@ -297,6 +297,9 @@ int parse_cd(char *a_target, char *r_target)
     strcat(a_target, r_target);
   }
 
+  if (strcmp(a_target, "/") == 0)
+    return 0;
+
   char new_path[MAX_INP_SIZE] = "/";
 
   char *saveptr;
@@ -305,15 +308,14 @@ int parse_cd(char *a_target, char *r_target)
 
   do
   {
-    if (strcmp(token, "..") == 0)
+    if (strcmp(token, ".") == 0) continue;
+    else if (strcmp(token, "..") == 0)
     {
       if (strcmp(new_path, "/") == 0) continue;
       int index = strlen(new_path) - 1;
       while (new_path[index] != '/' && index >= 0) index--;
       new_path[index] = '\0';
     }
-    else if (strcmp(token, ".") == 0)
-      continue;
     else
     {
       if (new_path[strlen(new_path) - 1] != '/')

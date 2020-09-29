@@ -8,7 +8,7 @@ prepare:
 	mkdir -p bin
 
 p8sh: p8sh.c
-	$(CC) $(CC_FLAGS) p8sh p8sh.c -lm
+	$(CC) $(CC_FLAGS) p8sh p8sh.c -lm -g
 
 cat: cat.c
 	$(CC) $(CC_FLAGS) $(ODIR)/cat cat.c -lm
