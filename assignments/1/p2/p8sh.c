@@ -41,11 +41,23 @@ int fork_and_exec(char cmd[], int argc, char *argv[])
   }
 }
 
-int run_external(wordexp_t we)
+int check_run_command(wordexp_t we)
 {
   char *cmd_name = we.we_wordv[0];
   int argc = we.we_wordc;
   char **argv = we.we_wordv;
+
+  if (strcmp(cmd_name, "cd") == 0)
+    return cd(argc - 1, &argv[1]);
+
+  if (strcmp(cmd_name, "echo") == 0)
+    return echo(argc - 1, &argv[1]);
+
+  if (strcmp(cmd_name, "history") == 0)
+    return history(argc - 1, &argv[1]);
+
+  if (strcmp(cmd_name, "pwd") == 0)
+    return pwd(argc - 1, &argv[1]);
 
   if (strcmp(cmd_name, "ls") == 0)
     return fork_and_exec("/bin/ls", argc, argv);
@@ -62,30 +74,9 @@ int run_external(wordexp_t we)
   if (strcmp(cmd_name, "date") == 0)
     return fork_and_exec("/bin/date", argc, argv);
 
-  return -1;
-}
-
-int run_internal(wordexp_t we)
-{
-  char *cmd_name = we.we_wordv[0];
-  char **argv = &we.we_wordv[1];
-  int argc = we.we_wordc - 1;
-
-  if (strcmp(cmd_name, "cd") == 0)
-    return cd(argc, argv);
-
-  if (strcmp(cmd_name, "echo") == 0)
-    return echo(argc, argv);
-
-  if (strcmp(cmd_name, "history") == 0)
-    return history(argc, argv);
-
-  if (strcmp(cmd_name, "pwd") == 0)
-    return pwd(argc, argv);
-
   if (strcmp(cmd_name, "exit") == 0)
   {
-    int exit_code = argc > 0 ? atoi(argv[0]) : 0;
+    int exit_code = argc > 1 ? atoi(argv[1]) : 0;
     exit(exit_code);
   }
 
@@ -140,10 +131,7 @@ int main(int argc, char *argv[])
       continue;
     }
 
-    if (
-      (ERR = run_internal(we)) == -1 &&
-      (ERR = run_external(we)) == -1
-    )
+    if ((ERR = check_run_command(we)) == -1)
       fprintf(stderr, RED "p8sh: %s: command not found\n%s", we.we_wordv[0], RESET);
 
     wordfree(&we);
