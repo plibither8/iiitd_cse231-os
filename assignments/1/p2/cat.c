@@ -1,13 +1,13 @@
 #include <dirent.h>
-#include <stdio.h>
+#include <errno.h>
+#include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <math.h>
-#include <errno.h>
 
 typedef struct flags
 {
@@ -88,7 +88,8 @@ int main(int argc, char *argv[])
 {
   char *cwd = argv[0];
 
-  char *paths[argc - 1];
+  char *a_paths[argc - 1];
+  char *r_paths[argc - 1];
   int path_count = 0;
   flags flag = { 0, 0 };
 
@@ -127,7 +128,8 @@ int main(int argc, char *argv[])
     }
 
     // This argument is not an option/flag its a path to be cat'ed
-    paths[path_count++] = resolve_path(cwd, arg);
+    a_paths[path_count] = resolve_path(cwd, arg);
+    r_paths[path_count++] = arg;
   }
 
   int line_number = 0;
@@ -142,18 +144,28 @@ int main(int argc, char *argv[])
 
   for (int i = 0; i < path_count; i++)
   {
-    char *path = paths[i];
+    char *a_path = a_paths[i];
+    char *r_path = r_paths[i];
 
-    if (strcmp(path, "-") == 0)
+    if (strcmp(a_path, "-") == 0)
     {
       stdin_loop(&line_number);
       continue;
     }
 
-    FILE *fd = fopen(path, "r");
+    struct stat path_stat;
+    stat(a_path, &path_stat);
+    if (!S_ISREG(path_stat.st_mode))
+    {
+      fprintf(stderr, "cat: %s: Is a directory\n", r_path);
+      ERR_STATUS = 1;
+      continue;
+    }
+
+    FILE *fd = fopen(a_path, "r");
     if (fd == NULL)
     {
-      printf("cat: %s: No such file or directory\n", path);
+      fprintf(stderr, "cat: %s: No such file or directory\n", r_path);
       ERR_STATUS = 1;
       continue;
     }

@@ -259,12 +259,90 @@ int pwd(char cwd[], int argc, char *argv[])
   return 0;
 }
 
+void normalise_slash(char *a_path)
+{
+  char *copy = strdup(a_path);
+  char *ptr = copy;
+
+  for (int i = 0; copy[i]; i++)
+  {
+    *ptr++ = a_path[i];
+    if (a_path[i] == '/')
+    {
+      i++;
+      while (a_path[i] == '/')
+        i++;
+      i--;
+    }
+  }
+
+  *ptr = '\0';
+  strcpy(a_path, copy);
+}
+
 void cd_up(char *a_path)
 {
+  if (strcmp(a_path, "/") == 0)
+    return;
   int index = strlen(a_path) - 1;
   while(a_path[index] != '/' && index >= 0)
     index--;
   a_path[index] = '\0';
+}
+
+int parse_cd(char *a_target, char *r_target)
+{
+  normalise_slash(r_target);
+
+  if (r_target[0] == '/')
+  {
+    strcpy(a_target, r_target);
+    r_target[0] = '\0';
+  }
+  else
+  {
+    if (a_target[strlen(a_target) - 1] != '/')
+      strcat(a_target, "/");
+    strcat(a_target, r_target);
+  }
+
+  char new_path[MAX_INP_SIZE] = "/";
+
+  char *saveptr;
+  char *delim = "/";
+  char *token = strtok_r(a_target, delim, &saveptr);
+
+  do
+  {
+    if (strcmp(token, "..") == 0)
+      cd_up(new_path);
+    else if (strcmp(token, ".") == 0)
+      continue;
+    else
+    {
+      if (new_path[strlen(new_path) - 1] != '/')
+        strcat(new_path, "/");
+      strcat(new_path, token);
+    }
+
+    DIR *dir = opendir(new_path);
+    if (!dir)
+    {
+      closedir(dir);
+      return 1;
+    }
+    closedir(dir);
+  }
+  while (token = strtok_r(NULL, delim, &saveptr));
+
+  strcpy(a_target, new_path);
+  return 0;
+}
+
+void cd_free(char *a, char *b)
+{
+  free(a);
+  free(b);
 }
 
 int cd(WD *w_dirs, int argc, char *argv[])
@@ -281,6 +359,7 @@ int cd(WD *w_dirs, int argc, char *argv[])
     if (arg_count > 0)
     {
       fprintf(stderr, "p8sh: cd: too many arguments\n");
+      cd_free(r_target, r_target_save);
       return 1;
     }
 
@@ -297,6 +376,7 @@ int cd(WD *w_dirs, int argc, char *argv[])
         else
         {
           fprintf(stderr, "p8sh: cd: -'%c': invalid option\n", letter);
+          cd_free(r_target, r_target_save);
           return 1;
         }
       }
@@ -312,32 +392,12 @@ int cd(WD *w_dirs, int argc, char *argv[])
     strcpy(a_target, w_dirs->previous);
   else
   {
-    while (1)
+    if (parse_cd(a_target, r_target))
     {
-      if (
-        strcmp(r_target, "..") == 0 ||
-        r_target[0] == '.' && r_target[1] == '.' && r_target[2] == '/'
-      )
-      {
-        cd_up(a_target);
-        r_target += strlen(r_target) == 2 ? 2 : 3;
-      }
-      else if (
-        strcmp(r_target, ".") == 0 ||
-        r_target[0] == '.' && r_target[1] == '/'
-      )
-      {
-        r_target += strlen(r_target) == 1 ? 1 : 2;
-      }
-      else break;
+      fprintf(stderr, "p8sh: cd: no such file or directory: %s\n", r_target_save);
+      cd_free(r_target, r_target_save);
+      return 1;
     }
-  }
-
-  if (strlen(r_target))
-  {
-    if (a_target[strlen(a_target) - 1] != '/')
-      strcat(a_target, "/");
-    strcat(a_target, r_target);
   }
 
   if (print_physical)
@@ -346,8 +406,9 @@ int cd(WD *w_dirs, int argc, char *argv[])
   DIR *dir = opendir(a_target);
   if (!dir)
   {
-    fprintf(stderr, "p8sh: cd: no such file or directory: %s\n", a_target);
+    fprintf(stderr, "p8sh: cd: no such file or directory: %s\n", r_target_save);
     closedir(dir);
+    cd_free(r_target, r_target_save);
     return 1;
   }
 
@@ -355,6 +416,7 @@ int cd(WD *w_dirs, int argc, char *argv[])
   strcpy(w_dirs->current, a_target);
 
   closedir(dir);
+  cd_free(r_target, r_target_save);
   return 0;
 }
 
