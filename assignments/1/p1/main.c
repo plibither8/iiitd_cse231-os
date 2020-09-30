@@ -9,7 +9,7 @@
 // Error message constants
 #define ERR_FILE_OPEN "ERR! File could not be opened properly."
 #define ERR_FILE_SEEK "ERR! Could not seek in file."
-#define ERR_FILE_READ "ERR! Coult not read file."
+#define ERR_FILE_READ "ERR! Could not read file."
 #define ERR_FILE_CLOSE "ERR! Could not close file."
 #define ERR_WRITE "ERR! Could not write to specified stream"
 #define ERR_FORK "ERR! Could not fork parent."
