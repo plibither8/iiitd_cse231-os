@@ -138,7 +138,7 @@ void parse_file(char *file_content, char section)
 int main(int argc, char *argv[])
 {
   // Fork the process and store child pid
-  int child_pid = child_pid = fork();
+  pid_t child_pid = fork();
   switch (child_pid)
   {
     case 0:
