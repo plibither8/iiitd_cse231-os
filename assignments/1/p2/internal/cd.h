@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "../global.h"
@@ -72,13 +74,11 @@ int parse_cd(char *a_target, char *r_target)
     if (!strlen(new_path))
       strcpy(new_path, "/");
 
-    DIR *dir = opendir(new_path);
-    if (!dir)
-    {
-      closedir(dir);
+    struct stat statbuf;
+    if (stat(new_path, &statbuf) != 0)
       return 1;
-    }
-    closedir(dir);
+    if (!S_ISDIR(statbuf.st_mode))
+      return 2;
   }
   while (token = strtok_r(NULL, delim, &saveptr));
 
@@ -133,9 +133,17 @@ int cd(int argc, char *argv[])
     strcpy(a_target, working_dirs.previous);
   else
   {
-    if (parse_cd(a_target, r_target))
+    int err;
+    if (err = parse_cd(a_target, r_target))
     {
-      fprintf(stderr, "p8sh: cd: no such file or directory: %s\n", r_target_save);
+      switch (err)
+      {
+        case 1:
+          fprintf(stderr, "p8sh: cd: no such file or directory: %s\n", r_target_save);
+          break;
+        case 2:
+          fprintf(stderr, "p8sh: cd: not a directory: %s\n", r_target_save);
+      }
       cd_free(r_target, r_target_save);
       return 1;
     }
@@ -144,11 +152,16 @@ int cd(int argc, char *argv[])
   if (print_physical)
     strcpy(a_target, realpath(a_target, NULL));
 
-  DIR *dir = opendir(a_target);
-  if (!dir)
+  struct stat statbuf;
+  if (stat(a_target, &statbuf) != 0)
   {
     fprintf(stderr, "p8sh: cd: no such file or directory: %s\n", r_target_save);
-    closedir(dir);
+    cd_free(r_target, r_target_save);
+    return 1;
+  }
+  if (!S_ISDIR(statbuf.st_mode))
+  {
+    fprintf(stderr, "p8sh: cd: not a directory: %s\n", r_target_save);
     cd_free(r_target, r_target_save);
     return 1;
   }
@@ -157,7 +170,6 @@ int cd(int argc, char *argv[])
   strcpy(working_dirs.current, a_target);
   chdir(working_dirs.current);
 
-  closedir(dir);
   cd_free(r_target, r_target_save);
   return 0;
 }
