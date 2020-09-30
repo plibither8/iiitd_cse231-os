@@ -10,6 +10,7 @@
 #include "internal/echo.h"
 #include "internal/history.h"
 #include "internal/pwd.h"
+#include "internal/exit.h"
 
 int fork_and_exec(char cmd[], int argc, char *argv[])
 {
@@ -59,6 +60,9 @@ int check_run_command(wordexp_t we)
   if (strcmp(cmd_name, "pwd") == 0)
     return pwd(argc - 1, &argv[1]);
 
+  if (strcmp(cmd_name, "exit") == 0)
+    return exit_wrp(argc - 1, &argv[1]);
+
   if (strcmp(cmd_name, "ls") == 0)
     return fork_and_exec("/bin/ls", argc, argv);
 
@@ -73,12 +77,6 @@ int check_run_command(wordexp_t we)
 
   if (strcmp(cmd_name, "date") == 0)
     return fork_and_exec("/bin/date", argc, argv);
-
-  if (strcmp(cmd_name, "exit") == 0)
-  {
-    int exit_code = argc > 1 ? atoi(argv[1]) : 0;
-    exit(exit_code);
-  }
 
   return -1;
 }

@@ -75,10 +75,8 @@ int parse_cd(char *a_target, char *r_target)
       strcpy(new_path, "/");
 
     struct stat statbuf;
-    if (stat(new_path, &statbuf) != 0)
-      return 1;
-    if (!S_ISDIR(statbuf.st_mode))
-      return 2;
+    if (stat(new_path, &statbuf) != 0) return 1;
+    if (!S_ISDIR(statbuf.st_mode)) return 2;
   }
   while (token = strtok_r(NULL, delim, &saveptr));
 

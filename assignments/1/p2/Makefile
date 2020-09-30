@@ -24,3 +24,8 @@ mkdir: external/mkdir.c
 
 date: external/date.c
 	$(CC) $(CC_FLAGS) $(ODIR)/date external/date.c
+
+clean:
+	rm -r p8sh .p8sh_history bin
+
+.PHONY: clean
