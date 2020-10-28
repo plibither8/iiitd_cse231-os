@@ -11,7 +11,7 @@ diff --color -bur linux-5.9.1/arch/x86/entry/syscalls/syscall_64.tbl _linux-5.9.
  # x32-specific system call numbers start at 512 to avoid cache impact
 diff --color -bur linux-5.9.1/kernel/sys.c _linux-5.9.1/kernel/sys.c
 --- linux-5.9.1/kernel/sys.c	2020-10-17 06:31:22.000000000 +0000
-+++ _linux-5.9.1/kernel/sys.c	2020-10-28 09:03:11.730553022 +0000
++++ _linux-5.9.1/kernel/sys.c	2020-10-28 12:22:17.088046222 +0000
 @@ -42,6 +42,7 @@
  #include <linux/syscore_ops.h>
  #include <linux/version.h>
@@ -45,7 +45,7 @@ diff --color -bur linux-5.9.1/kernel/sys.c _linux-5.9.1/kernel/sys.c
 +	task_info = pid_task(find_vpid(pid), PIDTYPE_PID);
 +	if (task_info == NULL) {
 +		printk(KERN_ALERT, "Cannot get task info for PID: %ld\n", pid);
-+		return -1;
++		return -ESRCH;
 +	}
 +
 +	// Store the selected fields in `task_info_str`
@@ -81,7 +81,7 @@ diff --color -bur linux-5.9.1/kernel/sys.c _linux-5.9.1/kernel/sys.c
 +
 +	if (task_info_file == NULL) {
 +		printk(KERN_ALERT "%s: Couldn't open/create file\n", ks_path);
-+		return -1;
++		return -EIO;
 +	}
 +	printk(KERN_INFO "%s: File opened\n", ks_path);
 +

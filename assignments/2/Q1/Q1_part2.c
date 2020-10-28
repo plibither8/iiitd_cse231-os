@@ -8,7 +8,7 @@ int num = 10;
 
 void *decrementer(void *args)
 {
-  while(--num > -90);
+  while(--num > -9000000);
   printf("%d\n", num);
 }
 
@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
   pthread_create(&child, NULL, decrementer, NULL);
   pthread_join(child, NULL);
 
-  while(++num < 100);
+  while(++num < 10000000);
   printf("%d\n", num);
 
   return 0;
