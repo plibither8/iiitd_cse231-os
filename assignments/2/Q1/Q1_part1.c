@@ -19,15 +19,16 @@ int main(int argc, char *argv[])
     case 0:
     {
       while(--num > -90);
+      printf("%d\n", num);
       break;
     }
     default:
     {
       while(++num < 100);
       wait(NULL);
+      printf("%d\n", num);
     }
   }
 
-  printf("%d\n", num);
   return 0;
 }
