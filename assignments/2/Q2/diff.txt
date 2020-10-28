@@ -1,1 +1,97 @@
-# The diff should be in the form of text (Not image).
+diff --color -bur linux-5.9.1/arch/x86/entry/syscalls/syscall_64.tbl _linux-5.9.1/arch/x86/entry/syscalls/syscall_64.tbl
+--- linux-5.9.1/arch/x86/entry/syscalls/syscall_64.tbl	2020-10-17 06:31:22.000000000 +0000
++++ _linux-5.9.1/arch/x86/entry/syscalls/syscall_64.tbl	2020-10-26 11:53:32.154671283 +0000
+@@ -361,6 +361,7 @@
+ 437	common	openat2			sys_openat2
+ 438	common	pidfd_getfd		sys_pidfd_getfd
+ 439	common	faccessat2		sys_faccessat2
++440	common	sh_task_info		sys_sh_task_info
+ 
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --color -bur linux-5.9.1/kernel/sys.c _linux-5.9.1/kernel/sys.c
+--- linux-5.9.1/kernel/sys.c	2020-10-17 06:31:22.000000000 +0000
++++ _linux-5.9.1/kernel/sys.c	2020-10-28 09:03:11.730553022 +0000
+@@ -42,6 +42,7 @@
+ #include <linux/syscore_ops.h>
+ #include <linux/version.h>
+ #include <linux/ctype.h>
++#include <linux/list.h>
+ 
+ #include <linux/compat.h>
+ #include <linux/syscalls.h>
+@@ -2695,3 +2696,74 @@
+ 	return 0;
+ }
+ #endif /* CONFIG_COMPAT */
++
++
++SYSCALL_DEFINE2(sh_task_info, long, pid, char *, us_path)
++{
++	const int MAX_STR_LEN = 2048;
++	int str_len, child_count = 0;
++	char task_info_str[MAX_STR_LEN];
++	char ks_path[200];
++	struct task_struct *task_info, *child_task;
++	struct file *task_info_file;
++	struct list_head *list;
++
++	if (pid < 1 || pid > 2147483647) {
++		printk(KERN_ALERT, "Invalid PID: %ld\n", pid);
++		return -EINVAL; // Invalid argument (PID)
++	}
++
++	// Get process task info
++	task_info = pid_task(find_vpid(pid), PIDTYPE_PID);
++	if (task_info == NULL) {
++		printk(KERN_ALERT, "Cannot get task info for PID: %ld\n", pid);
++		return -1;
++	}
++
++	// Store the selected fields in `task_info_str`
++	str_len = snprintf(
++		task_info_str,
++		MAX_STR_LEN,
++		"Process details:\n"
++		"Name: %s\n"
++		"PID: %d\n"
++		"State: %ld\n"
++		"Priority: %d\n"
++		"Parent PID: %d\n"
++		"vruntime: %ld\n",
++		task_info->comm, (int)task_info->pid, (long)task_info->state, (int)task_info->prio,
++		(int) task_info->real_parent->pid, (long)task_info->se.vruntime);
++	printk(KERN_INFO "%s\n",task_info_str);
++
++	list_for_each(list, &task_info->children) {
++		child_task = list_entry(list, struct task_struct, sibling);
++		str_len += snprintf(
++			task_info_str + str_len,
++			MAX_STR_LEN,
++			"Child %d PID: %d\n",
++			++child_count, (int)child_task->pid
++		);
++	}
++
++	task_info_str[str_len] = '\0';
++
++	// Prepare for outputing into file
++	strncpy_from_user(ks_path, us_path, sizeof(ks_path));
++	task_info_file = filp_open(ks_path, O_WRONLY | O_CREAT, 0);
++
++	if (task_info_file == NULL) {
++		printk(KERN_ALERT "%s: Couldn't open/create file\n", ks_path);
++		return -1;
++	}
++	printk(KERN_INFO "%s: File opened\n", ks_path);
++
++	// Write to file
++	kernel_write(task_info_file, "", 0, task_info_file->f_pos);
++	kernel_write(task_info_file, task_info_str, str_len, task_info_file->f_pos);
++
++	// Close file
++	filp_close(task_info_file, NULL);
++
++	// Return nonzero (success)
++	return 0;
++}
