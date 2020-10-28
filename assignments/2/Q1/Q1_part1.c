@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
     default:
     {
       while(++num < 100);
+      wait(NULL);
     }
   }
 

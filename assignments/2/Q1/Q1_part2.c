@@ -16,7 +16,6 @@ int main(int argc, char *argv[])
 {
   pthread_t child;
   pthread_create(&child, NULL, decrementer, NULL);
-  pthread_join(child, NULL);
 
   while(++num < 10000000);
   printf("%d\n", num);
