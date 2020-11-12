@@ -4,6 +4,7 @@
 
 *.zip
 *.o
+*.out
 *.i
 !Makefile
 tests/*
