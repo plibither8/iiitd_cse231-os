@@ -1,1 +1,98 @@
-# The diff should be in the form of text (Not image).
+diff --color -bur linux-5.9.1/arch/x86/entry/syscalls/syscall_64.tbl _linux-5.9.1/arch/x86/entry/syscalls/syscall_64.tbl
+--- linux-5.9.1/arch/x86/entry/syscalls/syscall_64.tbl	2020-10-17 06:31:22.000000000 +0000
++++ _linux-5.9.1/arch/x86/entry/syscalls/syscall_64.tbl	2020-11-11 18:39:51.602553195 +0000
+@@ -361,6 +361,7 @@
+ 437	common	openat2			sys_openat2
+ 438	common	pidfd_getfd		sys_pidfd_getfd
+ 439	common	faccessat2		sys_faccessat2
++440	common	rtnice_mod		sys_rtnice_mod
+ 
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --color -bur linux-5.9.1/include/linux/sched.h _linux-5.9.1/include/linux/sched.h
+--- linux-5.9.1/include/linux/sched.h	2020-10-17 06:31:22.000000000 +0000
++++ _linux-5.9.1/include/linux/sched.h	2020-11-11 19:05:03.957304911 +0000
+@@ -457,6 +457,7 @@
+ 	u64				exec_start;
+ 	u64				sum_exec_runtime;
+ 	u64				vruntime;
++	u64				rtnice; // rtnice for the proc in ns
+ 	u64				prev_sum_exec_runtime;
+ 
+ 	u64				nr_migrations;
+diff --color -bur linux-5.9.1/kernel/sched/core.c _linux-5.9.1/kernel/sched/core.c
+--- linux-5.9.1/kernel/sched/core.c	2020-10-17 06:31:22.000000000 +0000
++++ _linux-5.9.1/kernel/sched/core.c	2020-11-11 19:06:12.178451892 +0000
+@@ -3070,6 +3070,7 @@
+ 	p->se.prev_sum_exec_runtime	= 0;
+ 	p->se.nr_migrations		= 0;
+ 	p->se.vruntime			= 0;
++	p->se.rtnice			= 0;
+ 	INIT_LIST_HEAD(&p->se.group_node);
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+diff --color -bur linux-5.9.1/kernel/sched/fair.c _linux-5.9.1/kernel/sched/fair.c
+--- linux-5.9.1/kernel/sched/fair.c	2020-10-17 06:31:22.000000000 +0000
++++ _linux-5.9.1/kernel/sched/fair.c	2020-11-11 20:16:35.375942856 +0000
+@@ -534,6 +534,9 @@
+ static inline int entity_before(struct sched_entity *a,
+ 				struct sched_entity *b)
+ {
++	if (a->rtnice + b->rtnice > 0)
++		return (s64)(a->rtnice - b->rtnice) > 0;
++
+ 	return (s64)(a->vruntime - b->vruntime) < 0;
+ }
+ 
+@@ -860,6 +863,13 @@
+ 	curr->sum_exec_runtime += delta_exec;
+ 	schedstat_add(cfs_rq->exec_clock, delta_exec);
+ 
++	// Here we are updating the rtnice, and reducing it by
++	// the number of ns it spent on the cpu. We will aslo
++	// increase the vruntime since this proc can be added
++	// back to rb-tree, and it should with correct values.
++	if (curr->rtnice > 0)
++		curr->rtnice = curr->rtnice > delta_exec ? (curr->rtnice - delta_exec) : 0;
++
+ 	curr->vruntime += calc_delta_fair(delta_exec, curr);
+ 	update_min_vruntime(cfs_rq);
+ 
+diff --color -bur linux-5.9.1/kernel/sys.c _linux-5.9.1/kernel/sys.c
+--- linux-5.9.1/kernel/sys.c	2020-10-17 06:31:22.000000000 +0000
++++ _linux-5.9.1/kernel/sys.c	2020-11-11 19:01:59.364950276 +0000
+@@ -2695,3 +2695,34 @@
+ 	return 0;
+ }
+ #endif /* CONFIG_COMPAT */
++
++SYSCALL_DEFINE2(rtnice_mod, int, req_pid, int, rtnice_val)
++{
++	struct task_struct *task_info, *child_task;
++
++	if (rtnice_val < 0) {
++		printk(KERN_ALERT "Invalid rtnice: %d\n", rtnice_val);
++		return -EINVAL; // Invalid argument (rtnice_val)
++	}
++
++	if (req_pid < 1 || req_pid > 2147483647) {
++		printk(KERN_ALERT "Invalid PID: %d\n", req_pid);
++		return -EINVAL; // Invalid argument (req_pid)
++	}
++
++	// Get process task info
++	task_info = pid_task(find_vpid(req_pid), PIDTYPE_PID);
++	if (task_info == NULL) {
++		printk(KERN_ALERT "Cannot get task info for PID: %d\n", req_pid);
++		return -ESRCH;
++	}
++
++	long ns = 1000000000
++	unsigned long long rtnice_val_ns = rtnice_val * ns
++	task_info->se.rtnice = rtnice_val_ns
++	printk(KERN_INFO "rtnice for PID: %d modified to %d seconds\n", req_pid, rtnice_val);
++
++	// return zero (success)
++	return 0;
++}
++
