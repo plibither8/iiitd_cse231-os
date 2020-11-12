@@ -1,4 +1,3 @@
-diff --color -bur linux-5.9.1/arch/x86/entry/syscalls/syscall_64.tbl _linux-5.9.1/arch/x86/entry/syscalls/syscall_64.tbl
 --- linux-5.9.1/arch/x86/entry/syscalls/syscall_64.tbl	2020-10-17 06:31:22.000000000 +0000
 +++ _linux-5.9.1/arch/x86/entry/syscalls/syscall_64.tbl	2020-11-11 18:39:51.602553195 +0000
 @@ -361,6 +361,7 @@
@@ -9,7 +8,7 @@ diff --color -bur linux-5.9.1/arch/x86/entry/syscalls/syscall_64.tbl _linux-5.9.
  
  #
  # x32-specific system call numbers start at 512 to avoid cache impact
-diff --color -bur linux-5.9.1/include/linux/sched.h _linux-5.9.1/include/linux/sched.h
+
 --- linux-5.9.1/include/linux/sched.h	2020-10-17 06:31:22.000000000 +0000
 +++ _linux-5.9.1/include/linux/sched.h	2020-11-11 19:05:03.957304911 +0000
 @@ -457,6 +457,7 @@
@@ -20,7 +19,7 @@ diff --color -bur linux-5.9.1/include/linux/sched.h _linux-5.9.1/include/linux/s
  	u64				prev_sum_exec_runtime;
  
  	u64				nr_migrations;
-diff --color -bur linux-5.9.1/kernel/sched/core.c _linux-5.9.1/kernel/sched/core.c
+
 --- linux-5.9.1/kernel/sched/core.c	2020-10-17 06:31:22.000000000 +0000
 +++ _linux-5.9.1/kernel/sched/core.c	2020-11-11 19:06:12.178451892 +0000
 @@ -3070,6 +3070,7 @@
@@ -31,7 +30,7 @@ diff --color -bur linux-5.9.1/kernel/sched/core.c _linux-5.9.1/kernel/sched/core
  	INIT_LIST_HEAD(&p->se.group_node);
  
  #ifdef CONFIG_FAIR_GROUP_SCHED
-diff --color -bur linux-5.9.1/kernel/sched/fair.c _linux-5.9.1/kernel/sched/fair.c
+
 --- linux-5.9.1/kernel/sched/fair.c	2020-10-17 06:31:22.000000000 +0000
 +++ _linux-5.9.1/kernel/sched/fair.c	2020-11-12 16:57:25.078935821 +0000
 @@ -534,6 +534,13 @@
@@ -62,7 +61,7 @@ diff --color -bur linux-5.9.1/kernel/sched/fair.c _linux-5.9.1/kernel/sched/fair
  	curr->vruntime += calc_delta_fair(delta_exec, curr);
  	update_min_vruntime(cfs_rq);
  
-diff --color -bur linux-5.9.1/kernel/sys.c _linux-5.9.1/kernel/sys.c
+
 --- linux-5.9.1/kernel/sys.c	2020-10-17 06:31:22.000000000 +0000
 +++ _linux-5.9.1/kernel/sys.c	2020-11-11 20:25:44.964838812 +0000
 @@ -2695,3 +2695,34 @@
