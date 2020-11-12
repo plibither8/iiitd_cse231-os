@@ -1,7 +1,6 @@
 # Do Not Change This File
 compile:
-	gcc test.c
+	gcc test.c -lgomp 
 
 run: compile
 	./a.out
-
