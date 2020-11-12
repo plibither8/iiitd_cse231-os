@@ -23,7 +23,6 @@ int main(int argc, char **argv)
 
   int rtnice_val = 100;
   int child_pid = fork();
-  syscall(RTNICE_ID, child_pid, rtnice_val);
 
   switch (child_pid)
   {
@@ -32,6 +31,7 @@ int main(int argc, char **argv)
     }
     case 0: {
       printf("Child process: PID %d\n", child_pid);
+      syscall(RTNICE_ID, child_pid, rtnice_val);
       long_computation();
       break;
     }
@@ -43,7 +43,8 @@ int main(int argc, char **argv)
   }
 
   gettimeofday(&stop_time, NULL);
-  printf("Task duration for PID %d: %lu", (int)getpid(), stop_time.tv_usec - start_time.tv_usec);
+  unsigned long duration = stop_time.tv_usec - start_time.tv_usec;
+  printf("Task duration for PID %d: %lu\n", (int)getpid(), duration);
 
   return 0;
 }
