@@ -6,11 +6,9 @@
 #include <linux/kernel.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/syscall.h>
 #include <time.h>
 #include <omp.h>
-
-#define RTNICE_ID 440
+#include "rtnice.c"
 
 void long_computation()
 {
@@ -62,7 +60,7 @@ int main(int argc, char **argv)
       int pid = getpid();
       int rtnice_val = i * rtnice_step;
 
-      if (syscall(RTNICE_ID, pid, rtnice_val)) return -1;
+      if (rtnice(pid, rtnice_val) < 0) return -1;
 
       start = omp_get_wtime();
       long_computation();
