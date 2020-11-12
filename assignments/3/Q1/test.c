@@ -43,7 +43,7 @@ int main(int argc, char **argv)
   }
 
   gettimeofday(&stop_time, NULL);
-  printf("Task duration for PID %d: lu%", (int)getpid(), stop_time.tv_usec - start_time.tv_usec);
+  printf("Task duration for PID %d: %lu", (int)getpid(), stop_time.tv_usec - start_time.tv_usec);
 
   return 0;
 }
