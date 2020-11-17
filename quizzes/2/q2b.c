@@ -29,14 +29,21 @@ int main(int argc, char** argv) {
 
   FILE *para_file = fopen("para2.txt", "r");
   char line[MAX_STR_LEN];
+  int file_length;
 
-  while (fgets(line, MAX_STR_LEN, para_file)) {
-    char *token;
+  fseek(para_file, 0, SEEK_END);
+  file_length = ftell(para_file);
+  fseek(para_file, 0, SEEK_SET);
+
+  printf("%d\n", file_length);
+
+  while (fgets(line, file_length + 1, para_file)) {
     char *saveptr;
-    token = strtok_r(line, " ", &saveptr);
+    char *token = strtok_r(line, " ", &saveptr);
 
     do {
       strcpy(message.mtext, token);
+      printf("%s\n", token);
       if (msgsnd(msqid, &message, strlen(token) + 1, 0) == -1) {
         perror("msgsnd");
         exit(EXIT_FAILURE);
