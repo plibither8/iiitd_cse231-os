@@ -45,6 +45,7 @@ int main(int argc, char** argv) {
 
       if (token[token_len - 1] == '\n') {
         token[token_len - 1] = '\0';
+        token_len--;
       }
 
       strcpy(message.mtext, token);
@@ -62,5 +63,6 @@ int main(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
 
+  fclose(para_file);
   return 0;
 }
