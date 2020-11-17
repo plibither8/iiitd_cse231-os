@@ -8,9 +8,10 @@
 #define MAX_STR_SIZE 500
 
 int main(int argc, char** argv) {
-  int pipe_fds[2];
+  int first_pipe_fds[2];
+  int second_pipe_fds[2];
 
-  if (pipe(pipe_fds) < 0) {
+  if (pipe(first_pipe_fds) < 0 || pipe(second_pipe_fds) < 0) {
     perror("pipe");
     exit(EXIT_FAILURE);
   }
@@ -32,7 +33,8 @@ int main(int argc, char** argv) {
       char buf[MAX_STR_SIZE];
       int pos = 0;
 
-      read(pipe_fds[0], buf, MAX_STR_SIZE);
+      close(first_pipe_fds[1]);
+      read(first_pipe_fds[0], buf, MAX_STR_SIZE);
 
       int i = 0;
       for (; i < strlen(buf); i++) {
@@ -40,25 +42,28 @@ int main(int argc, char** argv) {
       }
       upper[i] = '\0';
 
-      close(pipe_fds[0]);
+      close(first_pipe_fds[0]);
 
-      write(pipe_fds[1], upper, sizeof(upper));
-      close(pipe_fds[1]);
+      close(second_pipe_fds[0]);
+      write(second_pipe_fds[1], upper, sizeof(upper));
+      close(second_pipe_fds[1]);
 
       break;
     }
 
     // Parent process
     default: {
-      write(pipe_fds[1], input, strlen(input));
-      close(pipe_fds[1]);
+      close(first_pipe_fds[0]);
+      write(first_pipe_fds[1], input, strlen(input));
+      close(first_pipe_fds[1]);
 
       wait(NULL);
 
       char output[MAX_STR_SIZE];
 
-      read(pipe_fds[0], output, MAX_STR_SIZE);
-      close(pipe_fds[0]);
+      close(second_pipe_fds[1]);
+      read(second_pipe_fds[0], output, MAX_STR_SIZE);
+      close(second_pipe_fds[0]);
 
       printf("%s", output);
     }
