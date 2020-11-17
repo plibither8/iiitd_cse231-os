@@ -54,7 +54,7 @@ int main() {
     if (!strcmp(token, "%END%")) {
       if (++end_count == 2) break;
     } else {
-      printf("%s ", token);
+      printf("%s\n", token);
     }
   }
 

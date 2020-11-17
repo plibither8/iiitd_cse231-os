@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
   message.mtype = 1;
 
   key_t key = 31415; // Random, unique key
-  int msqid = msgget(key, MSGQ_PERMS); // Create the queue
+  int msqid = msgget(key, MSGQ_PERMS | IPC_CREAT); // Create the queue
 
   if (msqid == -1) {
     perror("msgget");
@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
     if (!strcmp(message.mtext, "%END%")) {
       if (++end_count == 2) break;
     } else {
-      printf("%s ", message.mtext);
+      printf("%s\n", message.mtext);
     }
   }
 
