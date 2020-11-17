@@ -1,1 +1,84 @@
+As per the given AVAILABILITY and MAX matrices, the NEED matrix is as follows:
 
+(NEED[i, j] = MAX[i, j] - AVAILABILITY[i, j])
+
++----+---+---+---+---+
+|    | A | B | C | D |
++----+---+---+---+---+
+| P0 | 2 | 2 | 1 | 1 |
+| P1 | 2 | 1 | 3 | 1 |
+| P2 | 0 | 2 | 1 | 3 |
+| P3 | 0 | 1 | 1 | 2 |
+| P4 | 2 | 2 | 3 | 3 |
++----+---+---+---+---+
+
+Stage 1.
+========
+
+Availability = [ 3 3 2 1 ]
+
+* At this stage, only P0's requirements can be met.
+* P0 is allocated resources, executes, frees resources.
+
+Now, Availability:  [ 3 3 2 1 ]
+                  + [ 2 2 1 1 ]
+                  _____________
+                  = [ 5 5 3 2 ]
+
+Stage 2.
+========
+
+Availability = [ 5 5 3 2 ]
+
+* At this stage, P1 and P3's requirements can be met.
+* P1 is allocated resources, executes, frees resources.
+
+Now, Availability:  [ 5 5 3 2 ]
+                  + [ 2 1 3 1 ]
+                  _____________
+                  = [ 7 6 6 3 ]
+
+Stage 3.
+========
+
+Now, Availability = [ 7 6 6 3 ]
+
+* At this stage, P2, P3 and P4's requirements can be met.
+* P2 is allocated resources, executes, frees resources.
+
+Now, Availability:  [ 7 6 6 3 ]
+                  + [ 0 2 1 3 ]
+                  _____________
+                  = [ 7 8 7 6 ]
+
+Stage 4.
+========
+
+Now, Availability = [ 7 8 7 6 ]
+
+* At this stage, P3 and P4's requirements can be met.
+* P3 is allocated resources, executes, frees resources.
+
+Now, Availability:  [ 7 8 7 6 ]
+                  + [ 0 1 1 2 ]
+                  _____________
+                  = [ 7 9 8 8 ]
+
+Stage 5.
+========
+
+Now, Availability = [ 7 9 8 8 ]
+
+* At this stage, P4's requirements can be met.
+* P4 is allocated resources, executes, frees resources.
+
+Now, Availability:  [ 7  9  8  8 ]
+                  + [ 2  2  3  3 ]
+                  ________________
+                  = [ 9 11 11 11 ]
+
+Conclusion.
+===========
+
+* Since all processes, { P0, P1, P2, P3, P4 }, can be completed, the system is in a safe state.
+* One of the safe orders to present is: P0->P1->P2->P3->P4
