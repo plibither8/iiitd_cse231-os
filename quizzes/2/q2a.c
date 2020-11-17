@@ -35,16 +35,20 @@ int main(int argc, char** argv) {
   file_length = ftell(para_file);
   fseek(para_file, 0, SEEK_SET);
 
-  printf("%d\n", file_length);
-
   while (fgets(line, file_length + 1, para_file)) {
     char *saveptr;
     char *token = strtok_r(line, " ", &saveptr);
+    int token_len;
 
     do {
+      token_len = strlen(token);
+
+      if (token[token_len - 1] == '\n') {
+        token[token_len - 1] = '\0';
+      }
+
       strcpy(message.mtext, token);
-      printf("%s\n", token);
-      if (msgsnd(msqid, &message, strlen(token) + 1, 0) == -1) {
+      if (msgsnd(msqid, &message, token_len + 1, 0) == -1) {
         perror("msgsnd");
         exit(EXIT_FAILURE);
       }
