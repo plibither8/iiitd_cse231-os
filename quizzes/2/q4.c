@@ -11,6 +11,7 @@
 #define KEY_CHAR 31416
 #define SHM_PERMS 0666 | IPC_CREAT
 #define MAX_STR_LEN 500
+#define ITER_COUNT 10
 
 int main(int argc, char** argv) {
   int shmid_int;
@@ -41,9 +42,15 @@ int main(int argc, char** argv) {
     }
 
     // WRITING HERE
+    for (int i = 0; i < ITER_COUNT; i++) {
+      sem_wait(sem_read);
+      strncpy(w_char, argv[1], MAX_STR_LEN);
+      *w_int = atoi(argv[2]);
+      sem_post(sem_write);
+    }
+
     sem_wait(sem_read);
-    strncpy(w_char, argv[1], MAX_STR_LEN);
-    *w_int = atoi(argv[2]);
+    strncpy(w_char, "$END$", MAX_STR_LEN);
     sem_post(sem_write);
   }
   // Parent process
@@ -59,10 +66,17 @@ int main(int argc, char** argv) {
     }
 
     // READING HERE
-    sem_wait(sem_write);
-    printf("%s\n", w_char);
-    printf("%d\n", *w_int);
-    sem_post(sem_read);
+    while (1) {
+      sem_wait(sem_write);
+      if (!strcmp(w_char, "$END$")) {
+        sem_post(sem_read);
+        break;
+      }
+
+      printf("%s\n", w_char);
+      printf("%d\n", *w_int);
+      sem_post(sem_read);
+    }
   }
 
   // Cleaning up
