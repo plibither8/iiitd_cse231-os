@@ -1,6 +1,6 @@
-As per the given AVAILABILITY and MAX matrices, the NEED matrix is as follows:
+As per the given ALLOCATION and MAX matrices, the NEED matrix is as follows:
 
-(NEED[i, j] = MAX[i, j] - AVAILABILITY[i, j])
+(NEED[i, j] = MAX[i, j] - ALLOCATION[i, j])
 
 +----+---+---+---+---+
 |    | A | B | C | D |

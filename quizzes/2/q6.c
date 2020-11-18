@@ -6,7 +6,7 @@
 #define PHIL_COUNT 5
 #define SLEEP_DURATION 1
 
-sem_t mutex;
+sem_t can_continue;
 sem_t forks[PHIL_COUNT];
 
 struct philosopher {
@@ -34,13 +34,13 @@ void *think_and_eat(void *__phil) {
     if (all_eaten) break;
 
     sleep(SLEEP_DURATION); // Think!
-    sem_wait(&mutex);
+    sem_wait(&can_continue);
 
     sem_wait(&forks[left]);
     printf("P%d receives F%d\n", phil->id + 1, left);
 
     sem_wait(&forks[right]);
-    sem_post(&mutex);
+    sem_post(&can_continue);
 
     printf("P%d receives F%d,F%d\n", phil->id + 1, left, right);
     phil->eaten = 1;
@@ -49,11 +49,13 @@ void *think_and_eat(void *__phil) {
     sem_post(&forks[left]);
     sem_post(&forks[right]);
   }
+
+  pthread_exit(0);
 }
 
 int main(int argc, char** argv) {
   // initialise the semaphores
-  sem_init(&mutex, 0, 1);
+  sem_init(&can_continue, 0, 1);
 
   for (int i = 0; i < PHIL_COUNT; i++) {
     sem_init(&forks[i], 0, 1);
@@ -62,8 +64,7 @@ int main(int argc, char** argv) {
   // initialise the phil structs and threads
   for (int i = 0; i < PHIL_COUNT; i++) {
     philosophers[i].id = i;
-    pthread_create(&(philosophers[i].thread),
-      NULL, think_and_eat, &(philosophers[i]));
+    pthread_create(&(philosophers[i].thread), NULL, think_and_eat, &(philosophers[i]));
   }
 
   for (int i = 0; i < PHIL_COUNT; i++) {
