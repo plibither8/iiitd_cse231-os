@@ -71,5 +71,11 @@ int main(int argc, char** argv) {
     pthread_join(philosophers[i].thread, NULL);
   }
 
+  sem_destroy(&can_continue);
+
+  for (int i = 0; i < PHIL_COUNT; i++) {
+    sem_destroy(&forks[i]);
+  }
+
   return 0;
 }

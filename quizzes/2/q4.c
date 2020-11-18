@@ -80,8 +80,8 @@ int main(int argc, char** argv) {
   }
 
   // Cleaning up
-  sem_close(sem_write);
-  sem_close(sem_read);
+  sem_destroy(&sem_write);
+  sem_destroy(&sem_read);
 
   if (shmdt(w_int) < 0 || shmdt(w_char) < 0) {
     perror("shmdt");

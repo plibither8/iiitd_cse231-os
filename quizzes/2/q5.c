@@ -91,5 +91,8 @@ int main(int argc, char** argv) {
     pthread_join(readers[i], NULL);
   }
 
+  sem_destroy(&write_sem);
+  pthread_mutex_destroy(&mutex);
+
   return 0;
 }
