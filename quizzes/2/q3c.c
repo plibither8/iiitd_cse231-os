@@ -10,10 +10,15 @@
 #define MAX_STR_LEN 500
 #define PORT 3000
 
+struct pkt {
+  char token[MAX_STR_LEN];
+  char file[MAX_STR_LEN];
+};
+
 int main() {
   int socket_fd;
-  char token[MAX_STR_LEN];
   struct sockaddr_in server_addr, client_addr;
+  struct pkt pkt;
 
   socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
   if (socket_fd < 0) {
@@ -42,8 +47,8 @@ int main() {
   while (1) {
     token_len = recvfrom(
       socket_fd,
-      token,
-      MAX_STR_LEN,
+      &pkt,
+      sizeof(pkt),
       MSG_WAITALL,
       (struct sockaddr *) &client_addr,
       &client_addr_len
@@ -51,11 +56,7 @@ int main() {
 
     if (!token_len) continue;
 
-    if (!strcmp(token, "%END%")) {
-      if (++end_count == 2) break;
-    } else {
-      printf("%s\n", token);
-    }
+    printf("%s: %s\n", pkt.file, pkt.token);
   }
 
   close(socket_fd);

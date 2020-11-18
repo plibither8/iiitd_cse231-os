@@ -9,11 +9,18 @@
 
 #define MAX_STR_LEN 500
 #define PORT 3000
+#define FILENAME "para2.txt"
+
+struct pkt {
+  char token[MAX_STR_LEN];
+  char file[MAX_STR_LEN];
+};
 
 int main() {
   int socket_fd;
-  char buf[MAX_STR_LEN];
   struct sockaddr_in dest_addr;
+  struct pkt pkt;
+  strcpy(pkt.file, FILENAME);
 
   socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
   if (socket_fd < 0) {
@@ -27,10 +34,7 @@ int main() {
   dest_addr.sin_family = AF_INET;
   dest_addr.sin_addr.s_addr = INADDR_ANY;
 
-  int n, len;
-  char *str = "Mihir";
-
-  FILE *para_file = fopen("para2.txt", "r");
+  FILE *para_file = fopen(FILENAME, "r");
   char line[MAX_STR_LEN];
   int file_length;
 
@@ -51,10 +55,12 @@ int main() {
         token_len--;
       }
 
+      strcpy(pkt.token, token);
+
       sendto(
         socket_fd,
-        token,
-        token_len + 1,
+        (const void *) &pkt,
+        sizeof(pkt),
         MSG_CONFIRM,
         (const struct sockaddr *) &dest_addr,
         sizeof(dest_addr)
@@ -62,16 +68,6 @@ int main() {
     }
     while (token = strtok_r(NULL, " ", &saveptr));
   }
-
-  char *end_signal = "%END%";
-  sendto(
-    socket_fd,
-    end_signal,
-    strlen(end_signal) + 1,
-    MSG_CONFIRM,
-    (const struct sockaddr *) &dest_addr,
-    sizeof(dest_addr)
-  );
 
   fclose(para_file);
   return 0;

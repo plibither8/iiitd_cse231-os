@@ -9,10 +9,12 @@
 
 #define MAX_STR_LEN 500
 #define MSGQ_PERMS 0644
+#define FILENAME "para1.txt"
 
 struct message {
   long mtype;
   char mtext[MAX_STR_LEN];
+  char mfile[MAX_STR_LEN];
 };
 
 int main(int argc, char** argv) {
@@ -27,7 +29,7 @@ int main(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
 
-  FILE *para_file = fopen("para1.txt", "r");
+  FILE *para_file = fopen(FILENAME, "r");
   char line[MAX_STR_LEN];
   int file_length;
 
@@ -45,22 +47,16 @@ int main(int argc, char** argv) {
 
       if (token[token_len - 1] == '\n') {
         token[token_len - 1] = '\0';
-        token_len--;
       }
 
       strcpy(message.mtext, token);
-      if (msgsnd(msqid, &message, token_len + 1, 0) == -1) {
+      strcpy(message.mfile, FILENAME);
+      if (msgsnd(msqid, &message, sizeof(message), 0) == -1) {
         perror("msgsnd");
         exit(EXIT_FAILURE);
       }
     }
     while (token = strtok_r(NULL, " ", &saveptr));
-  }
-
-  strcpy(message.mtext, "%END%");
-  if (msgsnd(msqid, &message, 6, 0) == -1) {
-    perror("msgsnd");
-    exit(EXIT_FAILURE);
   }
 
   fclose(para_file);

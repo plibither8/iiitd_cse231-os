@@ -13,6 +13,7 @@
 struct message {
   long mtype;
   char mtext[MAX_STR_LEN];
+  char mfile[MAX_STR_LEN];
 };
 
 int main(int argc, char** argv) {
@@ -30,20 +31,13 @@ int main(int argc, char** argv) {
   int end_count = 0;
 
   while (1) {
-    if (msgrcv(msqid, &message, sizeof(message.mtext), 0, 0) == -1) {
+    if (msgrcv(msqid, &message, sizeof(message), 0, 0) == -1) {
       perror("msgrcv");
       exit(1);
     }
 
-    if (!strcmp(message.mtext, "%END%")) {
-      if (++end_count == 2) break;
-    } else {
-      printf("%s\n", message.mtext);
-    }
+    printf("%s: %s\n", message.mfile, message.mtext);
   }
-
-  strcpy(message.mtext, "%FIN%");
-  msgsnd(msqid, &message, 6, 0);
 
   if (msgctl(msqid, IPC_RMID, NULL) == -1) {
     perror("msgctl");
