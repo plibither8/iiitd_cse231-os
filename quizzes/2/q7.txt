@@ -1,3 +1,5 @@
+**This question uses the Banker's Algorithm.**
+
 ALLOCATION MATRIX:
 
 +----+---+---+---+---+
