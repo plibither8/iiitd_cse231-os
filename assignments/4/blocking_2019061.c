@@ -72,16 +72,19 @@ void *think_and_eat(void *__phil) {
     sleep(SLEEP_DURATION); // Think!
     my_semaphore_wait(&can_continue);
 
+    // Wait for the forks
     my_semaphore_wait(&forks[left]);
     printf("P%d receives F%d\n", phil->id + 1, left);
-
     my_semaphore_wait(&forks[right]);
-    my_semaphore_wait(&sauce_bowls);
     my_semaphore_signal(&can_continue);
+
+    // Wait for the sauce bowls
+    my_semaphore_wait(&sauce_bowls);
 
     printf("P%d receives F%d,F%d\n", phil->id + 1, left, right);
     sleep(SLEEP_DURATION); // Eat!
 
+    // Let go of forks and sauce bowls
     my_semaphore_signal(&forks[left]);
     my_semaphore_signal(&forks[right]);
     my_semaphore_signal(&sauce_bowls);

@@ -15,7 +15,7 @@ typedef struct my_semaphore {
 
 // Semaphore Initialising function
 void my_semaphore_init(sem_t *S, int value) {
-  S->value = value;
+  S->value = S->max_value = value;
 }
 
 // Main wait function
@@ -70,12 +70,15 @@ void *think_and_eat(void *__phil) {
 
     while (!my_semaphore_wait(&can_continue)) {} // wait
 
+    // Wait for the forks
     while (!my_semaphore_wait(&forks[left])) {} // wait
     printf("P%d receives F%d\n", phil->id + 1, left);
-
     while (!my_semaphore_wait(&forks[right])) {} // wait
-    while (!my_semaphore_wait(&sauce_bowls)) {} // wait
     my_semaphore_signal(&can_continue);
+
+    while (!my_semaphore_wait(&sauce_bowls)) {} // wait
+
+    // Wait for the sauce bowls
 
     printf("P%d receives F%d,F%d\n", phil->id + 1, left, right);
     sleep(SLEEP_DURATION); // Eat!
