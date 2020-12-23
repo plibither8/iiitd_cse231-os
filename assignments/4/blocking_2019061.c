@@ -17,6 +17,7 @@ typedef struct my_semaphore {
 // Semaphore Initialising function
 void my_semaphore_init(sem_t *S, int value) {
   S->value = S->max_value = value;
+  pthread_cond_init(&S->conditional_var, NULL);
 }
 
 // Main wait function
